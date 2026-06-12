@@ -212,7 +212,7 @@ function NLScreen() {
       <div style={{ borderRight: "1px solid var(--border)", padding: "18px 16px", overflowY: "auto" }}>
         <div style={{ ...mono, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>NL Agent · 중규모 검증</div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 14 }}>
-          레이어 8연산만으로 조회 — 스키마 전문 비제공 · 질문 {Q.length}개
+          충분히 채워진 시맨틱 레이어가 주어졌을 때, 레이어를 소비하는 에이전트의 로직이 중규모에서 성립하는가
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
           <Btn on={!busy} color="var(--accent)" onClick={runAll}>전체 실행</Btn>
