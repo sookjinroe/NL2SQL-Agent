@@ -542,10 +542,20 @@ function QuestionView({ db, Q, route, nav }) {
       <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 4 }}>{ECAT[cat].toUpperCase()}</div>
       {Q.filter((q) => q.cat === cat).map((q) => (
         <div key={q.id} onClick={() => nav("question", q.id)}
-          style={{ display: "flex", gap: 7, alignItems: "baseline", padding: "3px 8px", borderRadius: 4, cursor: "pointer",
-                   background: sel === q.id ? "rgba(255,255,255,0.06)" : "transparent" }}>
-          <span style={{ ...eMono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
-          <span style={{ fontSize: 11.5, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
+          style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer",
+                   background: sel === q.id ? "rgba(255,255,255,0.06)" : "transparent",
+                   borderLeft: sel === q.id ? "2px solid var(--accent)" : "2px solid transparent" }}>
+          <div style={{ display: "flex", gap: 7, alignItems: "baseline" }}>
+            <span style={{ ...eMono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
+            <span style={{ fontSize: 11.5, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
+          </div>
+          {(q.checkpoint && q.checkpoint.markers && q.checkpoint.markers.length > 0) && (
+            <div style={{ display: "flex", gap: 4, marginTop: 3, paddingLeft: 30 }}>
+              {q.checkpoint.markers.map((m) => (
+                <span key={m} style={{ ...eMono, fontSize: 9, color: MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
+                  border: `1px solid ${MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}55`,
+                  borderRadius: 3, padding: "0px 5px" }}>{m}</span>))}
+            </div>)}
         </div>))}
     </div>));
   const q = Q.find((x) => x.id === sel) || Q[0];
@@ -569,16 +579,42 @@ function RunnableSql({ db, sql, label }) {
     </div>);
 }
 
+const MARKER_COLOR = { "함정":"var(--low)", "경계":"var(--med)", "D8":"var(--sig)",
+  "오류":"var(--lin)", "폴백":"var(--accent)", "조인":"var(--high)", "대표":"var(--dim)" };
+
 function QDetail({ db, q }) {
   const MODE = { sql: ["단일 골든", "var(--high)"], clarify: ["모호 — D8 3단 채점", "var(--med)"], missing: ["의도된 결손", "var(--low)"] };
+  const cp = q.checkpoint || {};
+  const markers = cp.markers || [];
   return (
     <div style={{ maxWidth: 880 }}>
       <div style={{ ...eMono, fontSize: 11, color: "var(--muted)" }}>{q.id} · {ECAT[q.cat]}</div>
       <div style={{ fontSize: 16.5, fontWeight: 600, margin: "6px 0 8px" }}>{q.text}</div>
-      <div style={{ marginBottom: 4 }}>
+      <div style={{ marginBottom: markers.length ? 12 : 4 }}>
         <Chip color={MODE[q.mode][1]}>{MODE[q.mode][0]}</Chip>
+        {markers.map((m) => <Chip key={m} color={MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}>{m}</Chip>)}
         {(q.tags || []).map((t) => <Chip key={t} color="var(--dim)">{t}</Chip>)}
       </div>
+      {(cp.must || cp.watch || cp.trap) && (
+        <div style={{ border: "1px solid var(--border)", borderLeft: "3px solid var(--med)", borderRadius: 5,
+                      padding: "12px 16px", marginBottom: 16, background: "rgba(0,0,0,0.18)" }}>
+          <div style={{ ...eMono, fontSize: 10.5, letterSpacing: "0.08em", color: "var(--med)", marginBottom: 9 }}>체크포인트</div>
+          {cp.must && (
+            <div style={{ display: "flex", gap: 10, marginBottom: 7 }}>
+              <span style={{ ...eMono, fontSize: 10.5, color: "var(--high)", flexShrink: 0, width: 110 }}>해야 할 것</span>
+              <span style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>{cp.must}</span>
+            </div>)}
+          {cp.watch && (
+            <div style={{ display: "flex", gap: 10, marginBottom: 7 }}>
+              <span style={{ ...eMono, fontSize: 10.5, color: "var(--sig)", flexShrink: 0, width: 110 }}>트레이스에서</span>
+              <span style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>{cp.watch}</span>
+            </div>)}
+          {cp.trap && (
+            <div style={{ display: "flex", gap: 10 }}>
+              <span style={{ ...eMono, fontSize: 10.5, color: "var(--low)", flexShrink: 0, width: 110 }}>함정·주의</span>
+              <span style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6 }}>{cp.trap}</span>
+            </div>)}
+        </div>)}
       <Section title="기대 조회 행동 (expected_ops — 적절성 채점의 골든)">
         {(q.expected_ops || []).map((o) => <Chip key={o} color="var(--sig)">{o}</Chip>)}
       </Section>
