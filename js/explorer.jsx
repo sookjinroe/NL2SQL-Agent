@@ -1,25 +1,33 @@
 // ============================================================
-// explorer.jsx — corpus-v1 데이터 탐색 (독립 앱, NL 에이전트 앱과 동일 양식).
-// 합칠 때: window.ExplorerScreen을 기존 앱 탭에 마운트하면 끝 (자체 부트는 window.__DB 재사용).
-// 보여주는 것:
-//   · 좌: 도메인별 테이블 목록 + 행 수
-//   · 우: 선택 테이블 — FK 이웃 그래프(SVG) · 컬럼(타입/PK·FK/PII/코드체계/Term 역할 뱃지)
-//          · 샘플 행 · 코드성 컬럼 값 분포(코드사전 라벨, 미등재면 '의미 미상')
-// 레이어 오버레이: 어떤 컬럼이 어떤 Term에 어떤 역할로 걸려 있는지 — 에이전트가
-//   트레이스에서 뒤지던 인벤토리를 사람 눈으로 보는 화면.
+// explorer.jsx — corpus-v1 데이터 탐색 v2.
+// 뷰 5개: 테이블(물리) · Term(의미) · 메트릭 · 충돌 지도 · 질문셋
+//  + 전역 검색(만능 진입점) + 전 화면 교차 링크 + 해시 딥링크(#x=view/선택)
+// 원칙: 이 화면은 '레이어가 아는 만큼 + DB 원시 값'만 보여준다.
+//  family는 사람용 감사 정보로 표시하되, 에이전트 연산(get_term)에서는 계속 비노출(D10).
+// 순수 로직은 explorer-lib.js (node 검증 완료), 이 파일은 표현만.
 // ============================================================
 const { useState: eUseState, useRef: eUseRef, useEffect: eUseEffect } = React;
 const eMono = { fontFamily: "var(--mono)" };
 const DOM_COLOR = { CUSTOMER: "var(--sig)", LOAN: "var(--accent)", CARD: "var(--lin)", DEPOSIT: "var(--high)", RISK: "var(--low)" };
 const ROLE_COLOR = { stored_as: "var(--accent)", measured_by: "var(--sig)", identified_by: "var(--high)",
                      attribute_of: "var(--med)", dated_by: "var(--lin)", segmented_by: "var(--text)", expressed_as: "var(--low)" };
+const FAM_LABEL = { F1_grade: "F1 등급", F2_status: "F2 상태", F3_repayment: "F3 상환방식", F4_limit: "F4 한도",
+                    F5_dlnq: "F5 연체", F6_balance: "F6 잔액", F7_maturity: "F7 만기" };
+const ECAT = { normal: "정상 경로", family: "충돌 패밀리", granularity: "입도", boundary: "경계 결손", join: "조인" };
+const VIEWS = [["table", "테이블"], ["term", "Term"], ["metric", "메트릭"], ["collision", "충돌 지도"], ["question", "질문셋"]];
 
 function ExplorerScreen() {
   const [ready, setReady] = eUseState(null);
-  const [sel, setSel] = eUseState("LOAN_ACCT_MST");
+  const [route, setRoute] = eUseState(() => window.ExplorerLib.parseHash(location.hash) || { v: "table", sel: "LOAN_ACCT_MST" });
   const [counts, setCounts] = eUseState({});
   const dbRef = eUseRef(null);
-  const L = window.LAYER;
+  const idxRef = eUseRef(null);
+  const L = window.LAYER, Q = window.QUESTIONS;
+
+  function nav(v, sel, hl) {
+    setRoute({ v, sel: sel || null, hl: hl || null });
+    try { history.replaceState(null, "", window.ExplorerLib.toHash(v, sel)); } catch (e) {}
+  }
 
   eUseEffect(() => { (async () => {
     try {
@@ -30,6 +38,7 @@ function ExplorerScreen() {
         dbRef.current = new SQL.Database(new Uint8Array(buf));
         window.__DB = dbRef.current;
       }
+      idxRef.current = window.ExplorerLib.buildIndexes(L);
       const c = {};
       for (const t of L.tables) c[t.name] = dbRef.current.exec(`SELECT COUNT(*) FROM ${t.name}`)[0].values[0][0];
       setCounts(c); setReady("ok");
@@ -39,61 +48,143 @@ function ExplorerScreen() {
   if (ready === null) return <ECenter>world.db(24MB) 적재 중…</ECenter>;
   if (ready !== "ok") return <ECenter>초기화 실패 — {ready} (http 서버로 실행했는지 확인)</ECenter>;
 
-  // 컬럼 → [{term, role, value?}] 역인덱스 (레이어 오버레이)
-  const colTerms = {};
-  for (const t of L.terms) for (const lk of t.links || []) {
-    if (lk.kind === "metric") continue;
-    (colTerms[lk.asset] = colTerms[lk.asset] || []).push({ term: t.name, role: lk.role, value: lk.value });
-  }
+  const idx = idxRef.current;
   const totalRows = Object.values(counts).reduce((a, b) => a + b, 0);
-  const doms = ["CUSTOMER", "LOAN", "CARD", "DEPOSIT", "RISK"];
+  const props = { db: dbRef.current, L, Q, idx, counts, route, nav };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "330px 1fr", minHeight: "100vh" }}>
-      <div style={{ borderRight: "1px solid var(--border)", padding: "18px 16px", overflowY: "auto" }}>
-        <div style={{ ...eMono, fontSize: 15, fontWeight: 600 }}>corpus-v1 · 데이터 탐색</div>
-        <div style={{ fontSize: 12, color: "var(--muted)", margin: "5px 0 14px" }}>
-          테이블 {L.tables.length} · 컬럼 {L.columns.length} · 행 {totalRows.toLocaleString()} · Term {L.terms.length}
-        </div>
-        {doms.map((d) => (
-          <div key={d} style={{ marginBottom: 13 }}>
-            <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: DOM_COLOR[d], marginBottom: 5 }}>{d}</div>
-            {L.tables.filter((t) => t.domain === d).map((t) => (
-              <div key={t.name} onClick={() => setSel(t.name)}
-                style={{ display: "flex", gap: 8, alignItems: "baseline", padding: "4px 8px", borderRadius: 4, cursor: "pointer",
-                         background: sel === t.name ? "rgba(255,255,255,0.06)" : "transparent" }}>
-                <span style={{ ...eMono, fontSize: 12, color: "var(--text)" }}>{t.name}</span>
-                <span style={{ flex: 1 }} />
-                <span style={{ ...eMono, fontSize: 10.5, color: "var(--dim)" }}>{(counts[t.name] || 0).toLocaleString()}</span>
-              </div>
-            ))}
-          </div>
-        ))}
+    <div>
+      <div style={{ display: "flex", gap: 2, alignItems: "center", padding: "8px 16px", borderBottom: "1px solid var(--border)" }}>
+        {VIEWS.map(([k, label]) => (
+          <div key={k} onClick={() => nav(k, null)}
+            style={{ ...eMono, fontSize: 11.5, padding: "5px 12px", cursor: "pointer", borderRadius: 4,
+                     color: route.v === k ? "var(--text)" : "var(--dim)",
+                     background: route.v === k ? "rgba(255,255,255,0.07)" : "transparent" }}>
+            {label}
+          </div>))}
+        <div style={{ flex: 1 }} />
+        <SearchBox L={L} Q={Q} nav={nav} />
+        <span style={{ ...eMono, fontSize: 10.5, color: "var(--dim)", marginLeft: 12 }}>
+          {L.tables.length}T · {L.columns.length}C · {totalRows.toLocaleString()}행 · Term {L.terms.length}
+        </span>
       </div>
-      <div style={{ padding: "20px 26px", overflowY: "auto" }}>
-        <TableDetail db={dbRef.current} L={L} name={sel} counts={counts} colTerms={colTerms} nav={setSel} />
-      </div>
+      {route.v === "table" && <TableView {...props} />}
+      {route.v === "term" && <TermView {...props} />}
+      {route.v === "metric" && <MetricView {...props} />}
+      {route.v === "collision" && <CollisionView {...props} />}
+      {route.v === "question" && <QuestionView {...props} />}
     </div>
   );
 }
 
-function TableDetail({ db, L, name, counts, colTerms, nav }) {
+// ============ 전역 검색 — 만능 진입점 ============
+function SearchBox({ L, Q, nav }) {
+  const [q, setQ] = eUseState("");
+  const [open, setOpen] = eUseState(false);
+  const results = q ? window.ExplorerLib.searchAll(L, Q, q) : [];
+  const KIND = { term: ["T", "var(--accent)", "term"], column: ["C", "var(--sig)", null],
+                 table: ["TB", "var(--high)", "table"], metric: ["M", "var(--lin)", "metric"],
+                 question: ["Q", "var(--med)", "question"] };
+  function go(r) {
+    setOpen(false); setQ("");
+    if (r.kind === "column") { const [t] = r.id.split("."); nav("table", t, r.id); }
+    else nav(KIND[r.kind][2], r.id);
+  }
+  return (
+    <div style={{ position: "relative" }}>
+      <input value={q} placeholder="Term·컬럼·테이블·메트릭·질문 검색"
+        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+        onKeyDown={(e) => { if (e.key === "Enter" && results.length) go(results[0]); if (e.key === "Escape") setOpen(false); }}
+        style={{ ...eMono, fontSize: 11.5, width: 280, background: "rgba(0,0,0,0.3)", color: "var(--text)",
+                 border: "1px solid var(--border)", borderRadius: 4, padding: "5px 10px" }} />
+      {open && results.length > 0 && (
+        <div style={{ position: "absolute", top: "110%", right: 0, width: 420, zIndex: 50, background: "var(--panel)",
+                      border: "1px solid var(--border)", borderRadius: 6, maxHeight: 340, overflowY: "auto",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+          {results.map((r, i) => (
+            <div key={i} onClick={() => go(r)}
+              style={{ display: "flex", gap: 9, padding: "7px 12px", cursor: "pointer", alignItems: "baseline",
+                       borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              <span style={{ ...eMono, fontSize: 9.5, color: KIND[r.kind][1], width: 18, flexShrink: 0 }}>{KIND[r.kind][0]}</span>
+              <span style={{ ...eMono, fontSize: 12, color: "var(--text)", whiteSpace: "nowrap" }}>{r.label}</span>
+              <span style={{ fontSize: 11, color: "var(--dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.sub}</span>
+            </div>))}
+        </div>)}
+    </div>
+  );
+}
+
+// ============ 공용 ============
+function TwoPane({ left, right }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "330px 1fr", minHeight: "calc(100vh - 96px)" }}>
+      <div style={{ borderRight: "1px solid var(--border)", padding: "14px 14px", overflowY: "auto" }}>{left}</div>
+      <div style={{ padding: "18px 26px", overflowY: "auto" }}>{right}</div>
+    </div>);
+}
+function Section({ title, children }) {
+  return (<div style={{ marginTop: 20 }}>
+    <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 9 }}>{title}</div>
+    {children}</div>);
+}
+function Badge({ color, children, onClick }) {
+  return <span onClick={onClick} style={{ ...eMono, fontSize: 9.5, color, border: `1px solid ${color}55`, borderRadius: 4,
+    padding: "0px 6px", marginLeft: 5, whiteSpace: "nowrap", display: "inline-block", marginBottom: 2,
+    cursor: onClick ? "pointer" : "default" }}>{children}</span>;
+}
+function Chip({ color, children, onClick }) {
+  return <span onClick={onClick} style={{ ...eMono, fontSize: 11, color: color || "var(--text)",
+    border: `1px solid ${color || "var(--border)"}66`, borderRadius: 4, padding: "2px 9px",
+    marginRight: 6, marginBottom: 5, display: "inline-block", cursor: onClick ? "pointer" : "default" }}>{children}</span>;
+}
+function ECenter({ children }) {
+  return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", color: "var(--muted)", fontSize: 13.5 }}>{children}</div>;
+}
+function ResultTbl({ rows }) {
+  if (!rows || !rows.length) return <div style={{ ...eMono, fontSize: 11, color: "var(--dim)", marginTop: 6 }}>(0행)</div>;
+  const cols = Object.keys(rows[0]); const view = rows.slice(0, 8);
+  return (
+    <div style={{ marginTop: 8, overflowX: "auto" }}>
+      <table style={{ ...eMono, fontSize: 10.5, borderCollapse: "collapse" }}>
+        <thead><tr>{cols.map((c) => <th key={c} style={{ textAlign: "left", padding: "3px 12px 3px 0", color: "var(--muted)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{c}</th>)}</tr></thead>
+        <tbody>{view.map((r, i) => <tr key={i}>{cols.map((c) => <td key={c} style={{ padding: "3px 12px 3px 0", color: "var(--text)", whiteSpace: "nowrap" }}>{String(r[c])}</td>)}</tr>)}</tbody>
+      </table>
+      {rows.length > 8 && <div style={{ ...eMono, fontSize: 10, color: "var(--dim)", marginTop: 4 }}>… 총 {rows.length}행</div>}
+    </div>);
+}
+
+// ============ ① 테이블 뷰 (물리) ============
+function TableView({ db, L, idx, counts, route, nav }) {
+  const sel = route.sel || "LOAN_ACCT_MST";
+  const doms = ["CUSTOMER", "LOAN", "CARD", "DEPOSIT", "RISK"];
+  const left = doms.map((d) => (
+    <div key={d} style={{ marginBottom: 12 }}>
+      <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: DOM_COLOR[d], marginBottom: 5 }}>{d}</div>
+      {L.tables.filter((t) => t.domain === d).map((t) => (
+        <div key={t.name} onClick={() => nav("table", t.name)}
+          style={{ display: "flex", gap: 8, alignItems: "baseline", padding: "3.5px 8px", borderRadius: 4, cursor: "pointer",
+                   background: sel === t.name ? "rgba(255,255,255,0.06)" : "transparent" }}>
+          <span style={{ ...eMono, fontSize: 11.5, color: "var(--text)" }}>{t.name}</span>
+          <span style={{ flex: 1 }} />
+          <span style={{ ...eMono, fontSize: 10, color: "var(--dim)" }}>{(counts[t.name] || 0).toLocaleString()}</span>
+        </div>))}
+    </div>));
+  return <TwoPane left={left} right={<TableDetail db={db} L={L} idx={idx} name={sel} counts={counts} hl={route.hl} nav={nav} />} />;
+}
+
+function TableDetail({ db, L, idx, name, counts, hl, nav }) {
   const t = L.tables.find((x) => x.name === name);
+  if (!t) return <ECenter>테이블 없음: {name}</ECenter>;
   const cols = L.columns.filter((c) => c.table === name);
-  // FK 이웃: 나가는(이 테이블의 fk) + 들어오는(남이 나를 참조)
   const out = t.fk_edges.map((e) => ({ via: e.from.split(".")[1], to: e.to.split(".")[0] }));
   const inn = [];
   for (const ot of L.tables) if (ot.name !== name)
     for (const e of ot.fk_edges) if (e.to.split(".")[0] === name) inn.push({ from: ot.name, via: e.from.split(".")[1] });
-
-  // 샘플 행
   let sample = [];
   try {
     const r = db.exec(`SELECT * FROM ${name} LIMIT 5`);
     if (r.length) sample = r[0].values.map((v) => Object.fromEntries(r[0].columns.map((c, i) => [c, v[i]])));
   } catch (e) {}
-
-  // 코드성 컬럼 분포 (코드체계 보유 + 미등재 결손 컬럼 둘 다 — 결손은 '의미 미상'으로 드러난다)
   const codeCols = cols.filter((c) => c.code_system || /(_CD|_FLG)$/.test(c.id.split(".")[1]));
   const dists = codeCols.slice(0, 4).map((c) => {
     const col = c.id.split(".")[1];
@@ -106,6 +197,8 @@ function TableDetail({ db, L, name, counts, colTerms, nav }) {
                rows: r[0].values.map(([v, n]) => ({ v: String(v), label: dict ? dict[v] : null, n, pct: n / total })) };
     } catch (e) { return null; }
   }).filter(Boolean);
+  const hlRef = eUseRef(null);
+  eUseEffect(() => { if (hlRef.current) hlRef.current.scrollIntoView({ block: "center" }); }, [name, hl]);
 
   return (
     <div style={{ maxWidth: 980 }}>
@@ -115,32 +208,35 @@ function TableDetail({ db, L, name, counts, colTerms, nav }) {
         <span style={{ fontSize: 12.5, color: "var(--muted)" }}>grain: {t.grain}</span>
         <span style={{ ...eMono, fontSize: 11.5, color: "var(--dim)" }}>{(counts[name] || 0).toLocaleString()}행</span>
       </div>
-
-      <FkGraph name={name} out={out} inn={inn} L={L} nav={nav} />
-
-      <Section title={`컬럼 ${cols.length}개 — 레이어 오버레이 (Term 역할 뱃지)`}>
+      <FkGraph name={name} out={out} inn={inn} nav={(n) => nav("table", n)} />
+      <Section title={`컬럼 ${cols.length}개 — 레이어 오버레이 (Term 역할 뱃지 클릭 → Term 뷰)`}>
         <table style={{ ...eMono, fontSize: 11.5, borderCollapse: "collapse", width: "100%" }}>
           <thead><tr>{["컬럼", "타입", "키", "Description", "Term 연결"].map((h) => (
             <th key={h} style={{ textAlign: "left", padding: "4px 10px 4px 0", color: "var(--muted)", borderBottom: "1px solid var(--border)" }}>{h}</th>))}</tr></thead>
           <tbody>{cols.map((c) => {
             const col = c.id.split(".")[1];
             const dictless = !L.codedict[c.id] && /_CD$/.test(col);
+            const isHl = hl === c.id;
             return (
-              <tr key={c.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              <tr key={c.id} ref={isHl ? hlRef : null}
+                  style={{ borderBottom: "1px solid rgba(255,255,255,0.04)",
+                           background: isHl ? "rgba(232,162,83,0.12)" : "transparent" }}>
                 <td style={{ padding: "4px 10px 4px 0", color: "var(--text)", whiteSpace: "nowrap" }}>
                   {col}
                   {c.classification && <Badge color="var(--low)">{c.classification}</Badge>}
                   {dictless && <Badge color="var(--med)">사전 미등재</Badge>}
                 </td>
                 <td style={{ padding: "4px 10px 4px 0", color: "var(--dim)", whiteSpace: "nowrap" }}>{c.type}</td>
-                <td style={{ padding: "4px 10px 4px 0", color: "var(--sig)", whiteSpace: "nowrap" }}>{c.pk ? "PK" : c.fk ? "FK→" + c.fk.split(".")[0] : ""}</td>
+                <td style={{ padding: "4px 10px 4px 0", color: "var(--sig)", whiteSpace: "nowrap", cursor: c.fk ? "pointer" : "default" }}
+                    onClick={c.fk ? () => nav("table", c.fk.split(".")[0]) : undefined}>
+                  {c.pk ? "PK" : c.fk ? "FK→" + c.fk.split(".")[0] : ""}</td>
                 <td style={{ padding: "4px 10px 4px 0", color: "var(--muted)", fontFamily: "var(--sans)", fontSize: 12 }}>
                   {c.description.text.split(" 값:")[0]}
                   {c.description.source === "auto" && <span style={{ ...eMono, fontSize: 9.5, color: "var(--dim)" }}> (auto)</span>}
                 </td>
                 <td style={{ padding: "4px 0" }}>
-                  {(colTerms[c.id] || []).map((x, i) => (
-                    <Badge key={i} color={ROLE_COLOR[x.role] || "var(--dim)"}>
+                  {(idx.colTerms[c.id] || []).map((x, i) => (
+                    <Badge key={i} color={ROLE_COLOR[x.role] || "var(--dim)"} onClick={() => nav("term", x.term)}>
                       {x.term}·{x.role}{x.value ? `='${x.value}'` : ""}
                     </Badge>))}
                 </td>
@@ -148,7 +244,6 @@ function TableDetail({ db, L, name, counts, colTerms, nav }) {
           })}</tbody>
         </table>
       </Section>
-
       {dists.length > 0 && (
         <Section title="코드성 컬럼 값 분포">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
@@ -171,33 +266,15 @@ function TableDetail({ db, L, name, counts, colTerms, nav }) {
                   </div>))}
               </div>))}
           </div>
-        </Section>
-      )}
-
-      <Section title="샘플 행 (LIMIT 5)">
-        {sample.length === 0 ? <div style={{ ...eMono, fontSize: 11.5, color: "var(--dim)" }}>(없음)</div> : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ ...eMono, fontSize: 10.5, borderCollapse: "collapse" }}>
-              <thead><tr>{Object.keys(sample[0]).map((c) => (
-                <th key={c} style={{ textAlign: "left", padding: "3px 12px 3px 0", color: "var(--muted)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{c}</th>))}</tr></thead>
-              <tbody>{sample.map((r, i) => (
-                <tr key={i}>{Object.values(r).map((v, j) => (
-                  <td key={j} style={{ padding: "3px 12px 3px 0", color: "var(--text)", whiteSpace: "nowrap" }}>{String(v)}</td>))}</tr>))}</tbody>
-            </table>
-          </div>)}
-      </Section>
+        </Section>)}
+      <Section title="샘플 행 (LIMIT 5)"><ResultTbl rows={sample} /></Section>
     </div>
   );
 }
 
-// FK 이웃 그래프 — 선택 테이블 중심, 좌=들어오는 참조 / 우=나가는 참조. 클릭 항행.
 function FkGraph({ name, out, inn, nav }) {
   const W = 940, rowH = 26, H = Math.max(inn.length, out.length, 1) * rowH + 46;
   const cy = H / 2;
-  const node = (x, y, label, color, onClick, anchor) => (
-    <g key={label + x + y} onClick={onClick} style={{ cursor: onClick ? "pointer" : "default" }}>
-      <text x={x} y={y + 4} textAnchor={anchor} style={{ fill: color, fontSize: 11.5, fontFamily: "var(--mono)" }}>{label}</text>
-    </g>);
   return (
     <Section title={`FK 이웃 — 들어오는 참조 ${inn.length} · 나가는 참조 ${out.length} (클릭 이동)`}>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
@@ -205,7 +282,8 @@ function FkGraph({ name, out, inn, nav }) {
           const y = 28 + i * rowH;
           return (<g key={"i" + i}>
             <path d={`M 285 ${y} C 360 ${y}, 380 ${cy}, 425 ${cy}`} stroke="var(--border)" fill="none" />
-            {node(280, y, e.from, "var(--sig)", () => nav(e.from), "end")}
+            <text x={280} y={y + 4} textAnchor="end" onClick={() => nav(e.from)}
+              style={{ fill: "var(--sig)", fontSize: 11.5, fontFamily: "var(--mono)", cursor: "pointer" }}>{e.from}</text>
             <text x={300} y={y - 5} style={{ fill: "var(--dim)", fontSize: 9, fontFamily: "var(--mono)" }}>{e.via}</text>
           </g>);
         })}
@@ -213,7 +291,8 @@ function FkGraph({ name, out, inn, nav }) {
           const y = 28 + i * rowH;
           return (<g key={"o" + i}>
             <path d={`M 515 ${cy} C 560 ${cy}, 580 ${y}, 655 ${y}`} stroke="var(--border)" fill="none" />
-            {node(660, y, e.to, "var(--accent)", () => nav(e.to), "start")}
+            <text x={660} y={y + 4} textAnchor="start" onClick={() => nav(e.to)}
+              style={{ fill: "var(--accent)", fontSize: 11.5, fontFamily: "var(--mono)", cursor: "pointer" }}>{e.to}</text>
             <text x={585} y={y - 5} style={{ fill: "var(--dim)", fontSize: 9, fontFamily: "var(--mono)" }}>{e.via}</text>
           </g>);
         })}
@@ -225,18 +304,237 @@ function FkGraph({ name, out, inn, nav }) {
   );
 }
 
-function Section({ title, children }) {
-  return (<div style={{ marginTop: 20 }}>
-    <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 9 }}>{title.toUpperCase ? title : title}</div>
-    {children}
-  </div>);
+// ============ ② Term 뷰 (의미) ============
+function TermView({ L, idx, route, nav }) {
+  const [filter, setFilter] = eUseState("");
+  const sel = route.sel || "대출연체";
+  const doms = ["CUSTOMER", "LOAN", "CARD", "DEPOSIT", "RISK"];
+  const nf = window.ExplorerLib.norm(filter);
+  const match = (t) => !nf || [t.name, ...(t.synonyms || [])].some((k) => window.ExplorerLib.norm(k).includes(nf));
+  const linked = L.terms.filter((t) => (t.links || []).length && match(t));
+  const orphan = L.terms.filter((t) => !(t.links || []).length && match(t));
+  const left = (
+    <div>
+      <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Term·동의어 필터"
+        style={{ ...eMono, fontSize: 11.5, width: "100%", background: "rgba(0,0,0,0.3)", color: "var(--text)",
+                 border: "1px solid var(--border)", borderRadius: 4, padding: "5px 9px", marginBottom: 10 }} />
+      {doms.map((d) => {
+        const ts = linked.filter((t) => t.domain === d);
+        if (!ts.length) return null;
+        return (
+          <div key={d} style={{ marginBottom: 11 }}>
+            <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: DOM_COLOR[d], marginBottom: 4 }}>{d}</div>
+            {ts.map((t) => (
+              <div key={t.name} onClick={() => nav("term", t.name)}
+                style={{ display: "flex", gap: 7, alignItems: "baseline", padding: "3px 8px", borderRadius: 4, cursor: "pointer",
+                         background: sel === t.name ? "rgba(255,255,255,0.06)" : "transparent" }}>
+                <span style={{ fontSize: 12.5, color: "var(--text)" }}>{t.name}</span>
+                {t.family && <span style={{ ...eMono, fontSize: 9, color: "var(--med)" }}>{t.family.split("_")[0]}</span>}
+                <span style={{ flex: 1 }} />
+                <span style={{ ...eMono, fontSize: 9.5, color: "var(--dim)" }}>{(t.links || []).length}links</span>
+              </div>))}
+          </div>);
+      })}
+      <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: "var(--dim)", margin: "14px 0 4px" }}>
+        미연결 (DISTRACTOR · {orphan.length})
+      </div>
+      {orphan.map((t) => (
+        <div key={t.name} onClick={() => nav("term", t.name)}
+          style={{ padding: "2.5px 8px", borderRadius: 4, cursor: "pointer", fontSize: 12, color: "var(--dim)",
+                   background: sel === t.name ? "rgba(255,255,255,0.06)" : "transparent" }}>{t.name}</div>))}
+    </div>);
+  return <TwoPane left={left} right={<TermDetail L={L} idx={idx} name={sel} nav={nav} />} />;
 }
-function Badge({ color, children }) {
-  return <span style={{ ...eMono, fontSize: 9.5, color, border: `1px solid ${color}55`, borderRadius: 4, padding: "0px 6px", marginLeft: 5, whiteSpace: "nowrap", display: "inline-block", marginBottom: 2 }}>{children}</span>;
+
+function TermDetail({ L, idx, name, nav }) {
+  const t = idx.termByName[name];
+  if (!t) return <ECenter>Term 없음: {name}</ECenter>;
+  const byRole = {};
+  for (const lk of t.links || []) {
+    const r = lk.kind === "metric" ? "measured_by" : lk.role;
+    (byRole[r] = byRole[r] || []).push(lk);
+  }
+  const roles = Object.keys(ROLE_COLOR).filter((r) => byRole[r]);
+  return (
+    <div style={{ maxWidth: 880 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
+        <span style={{ fontSize: 19, fontWeight: 700 }}>{t.name}</span>
+        <span style={{ ...eMono, fontSize: 11, color: DOM_COLOR[t.domain] || "var(--dim)" }}>{t.domain || "공통"}</span>
+        {t.family && <Chip color="var(--med)" onClick={() => nav("collision", t.family)}>{FAM_LABEL[t.family] || t.family} 패밀리</Chip>}
+        {!(t.links || []).length && <Chip color="var(--dim)">미연결 distractor</Chip>}
+      </div>
+      <div style={{ fontSize: 13.5, color: "var(--muted)", margin: "10px 0 0", lineHeight: 1.6 }}>{t.definition}</div>
+
+      {(t.synonyms || []).length > 0 && (
+        <Section title="동의어 — ⚠N은 그 표면형을 공유하는 Term 수 (의도된 충돌, 클릭 → 충돌 지도)">
+          {(t.synonyms || []).map((s) => {
+            const n = idx.surfaceCount[s] || 1;
+            return <Chip key={s} color={n >= 2 ? "var(--low)" : "var(--text)"}
+              onClick={n >= 2 ? () => nav("collision", s) : undefined}>{s}{n >= 2 ? ` ⚠${n}` : ""}</Chip>;
+          })}
+        </Section>)}
+
+      {roles.length > 0 && (
+        <Section title="실현(links) — 역할별 · 자산 클릭 시 해당 뷰로">
+          {roles.map((r) => (
+            <div key={r} style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "4px 0" }}>
+              <span style={{ ...eMono, fontSize: 11, color: ROLE_COLOR[r], width: 110, flexShrink: 0 }}>{r}</span>
+              <div>
+                {byRole[r].map((lk, i) => lk.kind === "metric"
+                  ? <Chip key={i} color="var(--sig)" onClick={() => nav("metric", lk.asset)}>{lk.asset}</Chip>
+                  : <Chip key={i} color="var(--text)" onClick={() => nav("table", lk.asset.split(".")[0], lk.asset)}>
+                      {lk.asset}{lk.value ? ` = '${lk.value}'` : ""}{lk.domain ? ` (${lk.domain})` : ""}</Chip>)}
+              </div>
+            </div>))}
+        </Section>)}
+
+      {t.valid_values && (
+        <Section title="유효 코드값 (valid_values)">
+          <table style={{ ...eMono, fontSize: 11.5, borderCollapse: "collapse" }}>
+            <tbody>{Object.entries(t.valid_values).map(([k, v]) => (
+              <tr key={k}><td style={{ padding: "2px 18px 2px 0", color: "var(--text)" }}>{k}</td>
+                <td style={{ padding: "2px 0", color: "var(--muted)", fontFamily: "var(--sans)" }}>{v}</td></tr>))}</tbody>
+          </table>
+        </Section>)}
+    </div>
+  );
 }
-function ECenter({ children }) {
-  return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", color: "var(--muted)", fontSize: 13.5 }}>{children}</div>;
+
+// ============ ③ 메트릭 뷰 ============
+function MetricView({ L, idx, route, nav }) {
+  const sel = route.sel || L.metrics[0].id;
+  const left = L.metrics.map((m) => (
+    <div key={m.id} onClick={() => nav("metric", m.id)}
+      style={{ padding: "5px 8px", borderRadius: 4, cursor: "pointer",
+               background: sel === m.id ? "rgba(255,255,255,0.06)" : "transparent" }}>
+      <div style={{ fontSize: 12.5, color: "var(--text)" }}>{m.name}</div>
+      <div style={{ ...eMono, fontSize: 10, color: "var(--dim)" }}>{m.id}</div>
+    </div>));
+  const m = L.metrics.find((x) => x.id === sel) || L.metrics[0];
+  const right = (
+    <div style={{ maxWidth: 820 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+        <span style={{ fontSize: 19, fontWeight: 700 }}>{m.name}</span>
+        <span style={{ ...eMono, fontSize: 11.5, color: "var(--dim)" }}>{m.id}</span>
+      </div>
+      <Section title="정의식 (expr)">
+        <pre style={{ ...eMono, fontSize: 12.5, background: "rgba(0,0,0,0.25)", border: "1px solid var(--border)",
+                      borderRadius: 5, padding: "10px 13px", whiteSpace: "pre-wrap", margin: 0 }}>{m.expr}</pre>
+      </Section>
+      <Section title="기준 필터 (base_filters) — 정본과 소박한 재계산을 가르는 지점">
+        {(m.base_filters || []).length
+          ? m.base_filters.map((f, i) => <Chip key={i} color="var(--low)">{f}</Chip>)
+          : <span style={{ ...eMono, fontSize: 11.5, color: "var(--dim)" }}>(없음)</span>}
+      </Section>
+      {m.note && <Section title="주석"><div style={{ fontSize: 13, color: "var(--muted)" }}>{m.note}</div></Section>}
+      <Section title="grain"><span style={{ ...eMono, fontSize: 12, color: "var(--text)" }}>{m.grain}</span></Section>
+      <Section title="이 지표로 측정되는 Term (measured_by 역방향)">
+        {(idx.metricTerms[m.id] || []).map((tn) => <Chip key={tn} color="var(--accent)" onClick={() => nav("term", tn)}>{tn}</Chip>)}
+        {!(idx.metricTerms[m.id] || []).length && <span style={{ ...eMono, fontSize: 11.5, color: "var(--low)" }}>⚠ 고아 메트릭 — 도달 경로 없음</span>}
+      </Section>
+    </div>);
+  return <TwoPane left={left} right={right} />;
+}
+
+// ============ ④ 충돌 지도 ============
+function CollisionView({ idx, route, nav }) {
+  const sel = route.sel;
+  return (
+    <div style={{ padding: "18px 26px", maxWidth: 1020 }}>
+      <Section title="충돌 패밀리 — 설계된 도메인 간 충돌 7군 (Term 클릭 → Term 뷰)">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+          {Object.entries(idx.families).map(([f, terms]) => (
+            <div key={f} style={{ border: `1px solid ${sel === f ? "var(--med)" : "var(--border)"}`, borderRadius: 6, padding: "10px 13px" }}>
+              <div style={{ ...eMono, fontSize: 11.5, color: "var(--med)", marginBottom: 7 }}>{FAM_LABEL[f] || f}</div>
+              {terms.map((tn) => <Chip key={tn} color="var(--text)" onClick={() => nav("term", tn)}>{tn}</Chip>)}
+            </div>))}
+        </div>
+      </Section>
+      <Section title={`동의어 충돌 지도 — 같은 말이 2개 이상 Term에 닿는 표면형 ${idx.collisions.length}개 (모호성의 물리적 실체)`}>
+        {idx.collisions.map((c) => (
+          <div key={c.word} style={{ display: "flex", gap: 12, alignItems: "baseline", padding: "7px 12px", borderRadius: 5,
+                                     border: `1px solid ${sel === c.word ? "var(--low)" : "rgba(255,255,255,0.05)"}`, marginBottom: 6 }}>
+            <span style={{ ...eMono, fontSize: 13, color: "var(--low)", width: 110, flexShrink: 0 }}>"{c.word}"</span>
+            <div>
+              {c.terms.map((tn) => {
+                const t = idx.termByName[tn];
+                return <Chip key={tn} color="var(--text)" onClick={() => nav("term", tn)}>
+                  {tn} <span style={{ color: DOM_COLOR[t.domain] || "var(--dim)" }}>·{t.domain || "공통"}</span></Chip>;
+              })}
+            </div>
+          </div>))}
+      </Section>
+    </div>
+  );
+}
+
+// ============ ⑤ 질문셋 뷰 ============
+function QuestionView({ db, Q, route, nav }) {
+  const sel = route.sel || Q[0].id;
+  const cats = ["normal", "family", "granularity", "boundary", "join"];
+  const left = cats.map((cat) => (
+    <div key={cat} style={{ marginBottom: 11 }}>
+      <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 4 }}>{ECAT[cat].toUpperCase()}</div>
+      {Q.filter((q) => q.cat === cat).map((q) => (
+        <div key={q.id} onClick={() => nav("question", q.id)}
+          style={{ display: "flex", gap: 7, alignItems: "baseline", padding: "3px 8px", borderRadius: 4, cursor: "pointer",
+                   background: sel === q.id ? "rgba(255,255,255,0.06)" : "transparent" }}>
+          <span style={{ ...eMono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
+          <span style={{ fontSize: 11.5, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
+        </div>))}
+    </div>));
+  const q = Q.find((x) => x.id === sel) || Q[0];
+  return <TwoPane left={left} right={<QDetail db={db} q={q} />} />;
+}
+
+function RunnableSql({ db, sql, label }) {
+  const [rows, setRows] = eUseState(null);
+  const [err, setErr] = eUseState(null);
+  return (
+    <div style={{ border: "1px solid var(--border)", borderRadius: 5, padding: "9px 12px", marginBottom: 9 }}>
+      {label && <div style={{ ...eMono, fontSize: 11, color: "var(--med)", marginBottom: 6 }}>{label}</div>}
+      <pre style={{ ...eMono, fontSize: 11.5, whiteSpace: "pre-wrap", margin: 0, color: "var(--text)" }}>{sql}</pre>
+      <div style={{ marginTop: 7 }}>
+        <span onClick={() => { try { setErr(null); setRows(window.Scorer.runSql(db, sql)); } catch (e) { setErr(String(e.message || e)); } }}
+          style={{ ...eMono, fontSize: 11, color: "var(--high)", border: "1px solid var(--high)66", borderRadius: 4,
+                   padding: "2px 10px", cursor: "pointer" }}>실행</span>
+        {err && <span style={{ ...eMono, fontSize: 11, color: "var(--low)", marginLeft: 8 }}>{err}</span>}
+      </div>
+      {rows && <ResultTbl rows={rows} />}
+    </div>);
+}
+
+function QDetail({ db, q }) {
+  const MODE = { sql: ["단일 골든", "var(--high)"], clarify: ["모호 — D8 3단 채점", "var(--med)"], missing: ["의도된 결손", "var(--low)"] };
+  return (
+    <div style={{ maxWidth: 880 }}>
+      <div style={{ ...eMono, fontSize: 11, color: "var(--muted)" }}>{q.id} · {ECAT[q.cat]}</div>
+      <div style={{ fontSize: 16.5, fontWeight: 600, margin: "6px 0 8px" }}>{q.text}</div>
+      <div style={{ marginBottom: 4 }}>
+        <Chip color={MODE[q.mode][1]}>{MODE[q.mode][0]}</Chip>
+        {(q.tags || []).map((t) => <Chip key={t} color="var(--dim)">{t}</Chip>)}
+      </div>
+      <Section title="기대 조회 행동 (expected_ops — 적절성 채점의 골든)">
+        {(q.expected_ops || []).map((o) => <Chip key={o} color="var(--sig)">{o}</Chip>)}
+      </Section>
+      {q.mode === "sql" && (
+        <Section title="골든 SQL — 실행해서 정답 확인">
+          <RunnableSql db={db} sql={q.golden.sql} />
+          {(q.golden.alternatives || []).map((a, i) => <RunnableSql key={i} db={db} sql={a.sql} label={`허용 대안 ${i + 1}`} />)}
+        </Section>)}
+      {q.mode === "clarify" && (
+        <Section title={`해석별 골든 — ${q.golden.policy}`}>
+          {q.golden.interpretations.map((it, i) => <RunnableSql key={i} db={db} sql={it.sql} label={it.label} />)}
+        </Section>)}
+      {q.mode === "missing" && (
+        <Section title="기대 행동">
+          <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.65, marginBottom: 10 }}>{q.golden.expected_behavior}</div>
+          {q.golden.world_truth && (
+            <RunnableSql db={db} sql={q.golden.world_truth.sql}
+              label="세계 진실 (평가 전용 — 레이어 밖 정보, 에이전트에게는 비공개)" />)}
+        </Section>)}
+    </div>
+  );
 }
 
 window.ExplorerScreen = ExplorerScreen;
-
