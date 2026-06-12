@@ -13,7 +13,13 @@ const ROLE_COLOR = { stored_as: "var(--accent)", measured_by: "var(--sig)", iden
                      attribute_of: "var(--med)", dated_by: "var(--lin)", segmented_by: "var(--text)", expressed_as: "var(--low)" };
 const FAM_LABEL = { F1_grade: "F1 등급", F2_status: "F2 상태", F3_repayment: "F3 상환방식", F4_limit: "F4 한도",
                     F5_dlnq: "F5 연체", F6_balance: "F6 잔액", F7_maturity: "F7 만기" };
-const ECAT = { normal: "정상 경로", family: "충돌 패밀리", granularity: "입도", boundary: "경계 결손", join: "조인" };
+const ECAT = {
+  normal:      { label: "정상 경로",   desc: "레이어 연산이 순서대로 돌아야 풀리는 기본 질문" },
+  family:      { label: "충돌 패밀리", desc: "같은 말이 여러 도메인에 걸림 — 어느 쪽인지 확인하지 않으면 조용히 틀린다" },
+  granularity: { label: "입도",        desc: "같은 개념의 다른 측정 단계 — 신청금액 vs 실행금액처럼 단계에 따라 숫자가 달라진다" },
+  boundary:    { label: "경계 결손",   desc: "레이어에 일부러 빠뜨린 정보 — 모르면 모른다고 해야 하고, 지어내면 안 된다" },
+  join:        { label: "조인",        desc: "두 테이블을 이어야 풀리는 질문 — 경로와 grain을 함께 검증한다" },
+};
 const VIEWS = [["table", "테이블"], ["term", "Term"], ["metric", "메트릭"], ["collision", "충돌 지도"], ["question", "질문셋"]];
 
 function ExplorerScreen() {
@@ -541,7 +547,10 @@ function QuestionView({ db, Q, route, nav }) {
   const cats = ["normal", "family", "granularity", "boundary", "join"];
   const left = cats.map((cat) => (
     <div key={cat} style={{ marginBottom: 11 }}>
-      <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 4 }}>{ECAT[cat].toUpperCase()}</div>
+      <div style={{ marginBottom: 6 }}>
+          <span style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: "var(--muted)" }}>{ECAT[cat].label.toUpperCase()}</span>
+          <div style={{ fontSize: 10.5, color: "var(--dim)", marginTop: 2, lineHeight: 1.5 }}>{ECAT[cat].desc}</div>
+        </div>
       {Q.filter((q) => q.cat === cat).map((q) => (
         <div key={q.id} onClick={() => nav("question", q.id)}
           style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer",
@@ -590,7 +599,7 @@ function QDetail({ db, q }) {
   const markers = cp.markers || [];
   return (
     <div style={{ maxWidth: 880 }}>
-      <div style={{ ...eMono, fontSize: 11, color: "var(--muted)" }}>{q.id} · {ECAT[q.cat]}</div>
+      <div style={{ ...eMono, fontSize: 11, color: "var(--muted)" }}>{q.id} · {ECAT[q.cat].label}</div>
       <div style={{ fontSize: 16.5, fontWeight: 600, margin: "6px 0 8px" }}>{q.text}</div>
       <div style={{ marginBottom: markers.length ? 12 : 4 }}>
         <Chip color={MODE[q.mode][1]}>{MODE[q.mode][0]}</Chip>
