@@ -1,0 +1,2196 @@
+[
+ {
+  "id": "N01",
+  "cat": "normal",
+  "text": "대출 연체 중인 계좌 목록을 계좌번호·고객번호·연체일수와 함께 보여줘",
+  "tags": [
+   "stored_as"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "sql": "SELECT LOAN_ACCT_NO, CUST_NO, DLNQ_DAYS FROM LOAN_ACCT_MST WHERE DLNQ_FLG='Y' ORDER BY DLNQ_DAYS DESC, LOAN_ACCT_NO",
+   "answer": {
+    "row_count": 261,
+    "rows": [
+     {
+      "LOAN_ACCT_NO": "LN0002383",
+      "CUST_NO": "CU000677",
+      "DLNQ_DAYS": 400
+     },
+     {
+      "LOAN_ACCT_NO": "LN0001282",
+      "CUST_NO": "CU001313",
+      "DLNQ_DAYS": 387
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000197",
+      "CUST_NO": "CU001228",
+      "DLNQ_DAYS": 386
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000062",
+      "CUST_NO": "CU000874",
+      "DLNQ_DAYS": 380
+     },
+     {
+      "LOAN_ACCT_NO": "LN0002502",
+      "CUST_NO": "CU000931",
+      "DLNQ_DAYS": 380
+     },
+     {
+      "LOAN_ACCT_NO": "LN0002333",
+      "CUST_NO": "CU001214",
+      "DLNQ_DAYS": 372
+     },
+     {
+      "LOAN_ACCT_NO": "LN0002212",
+      "CUST_NO": "CU000461",
+      "DLNQ_DAYS": 353
+     },
+     {
+      "LOAN_ACCT_NO": "LN0003356",
+      "CUST_NO": "CU001162",
+      "DLNQ_DAYS": 348
+     },
+     {
+      "LOAN_ACCT_NO": "LN0001702",
+      "CUST_NO": "CU000173",
+      "DLNQ_DAYS": 345
+     },
+     {
+      "LOAN_ACCT_NO": "LN0002812",
+      "CUST_NO": "CU000539",
+      "DLNQ_DAYS": 340
+     },
+     {
+      "LOAN_ACCT_NO": "LN0002305",
+      "CUST_NO": "CU001163",
+      "DLNQ_DAYS": 332
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000111",
+      "CUST_NO": "CU000298",
+      "DLNQ_DAYS": 314
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000361",
+      "CUST_NO": "CU000097",
+      "DLNQ_DAYS": 310
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000569",
+      "CUST_NO": "CU000820",
+      "DLNQ_DAYS": 288
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000259",
+      "CUST_NO": "CU001308",
+      "DLNQ_DAYS": 286
+     },
+     {
+      "LOAN_ACCT_NO": "LN0001235",
+      "CUST_NO": "CU000149",
+      "DLNQ_DAYS": 280
+     },
+     {
+      "LOAN_ACCT_NO": "LN0001382",
+      "CUST_NO": "CU000482",
+      "DLNQ_DAYS": 258
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000387",
+      "CUST_NO": "CU000682",
+      "DLNQ_DAYS": 256
+     },
+     {
+      "LOAN_ACCT_NO": "LN0002214",
+      "CUST_NO": "CU000456",
+      "DLNQ_DAYS": 246
+     },
+     {
+      "LOAN_ACCT_NO": "LN0002272",
+      "CUST_NO": "CU000216",
+      "DLNQ_DAYS": 241
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000779",
+      "CUST_NO": "CU000366",
+      "DLNQ_DAYS": 240
+     },
+     {
+      "LOAN_ACCT_NO": "LN0002574",
+      "CUST_NO": "CU000659",
+      "DLNQ_DAYS": 240
+     },
+     {
+      "LOAN_ACCT_NO": "LN0002155",
+      "CUST_NO": "CU001391",
+      "DLNQ_DAYS": 236
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000384",
+      "CUST_NO": "CU000597",
+      "DLNQ_DAYS": 228
+     },
+     {
+      "LOAN_ACCT_NO": "LN0002457",
+      "CUST_NO": "CU000025",
+      "DLNQ_DAYS": 223
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000395",
+      "CUST_NO": "CU000798",
+      "DLNQ_DAYS": 222
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000641",
+      "CUST_NO": "CU000201",
+      "DLNQ_DAYS": 222
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000581",
+      "CUST_NO": "CU000823",
+      "DLNQ_DAYS": 221
+     },
+     {
+      "LOAN_ACCT_NO": "LN0000142",
+      "CUST_NO": "CU000890",
+      "DLNQ_DAYS": 218
+     },
+     {
+      "LOAN_ACCT_NO": "LN0001677",
+      "CUST_NO": "CU001168",
+      "DLNQ_DAYS": 215
+     }
+    ],
+    "truncated": true
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N02",
+  "cat": "normal",
+  "text": "대출 연체율이 얼마야?",
+  "tags": [
+   "measured_by",
+   "metric_trap"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "get_metric"
+  ],
+  "golden": {
+   "sql": "SELECT ROUND(COUNT(CASE WHEN DLNQ_FLG='Y' THEN 1 END)*1.0/COUNT(*),4) AS rate FROM LOAN_ACCT_MST WHERE ACCT_STAT_CD NOT IN ('04','05')",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "rate": 0.0853
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "함정"
+   ],
+   "must": "get_metric(M_LOAN_DLNQ_RATE) 호출 → base_filters 확인 → SQL에 반영",
+   "watch": "WHERE 절에 ACCT_STAT_CD NOT IN ('04','05') 포함 여부",
+   "trap": "누락 시 7.63% 산출 — 골든 8.53%와 다름"
+  }
+ },
+ {
+  "id": "N03",
+  "cat": "normal",
+  "text": "기한이익상실 건의 대출잔액 총액은?",
+  "tags": [
+   "expressed_as",
+   "codedict"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT SUM(LOAN_BAL_AMT) AS total FROM LOAN_ACCT_MST WHERE ACCT_STAT_CD='03'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "total": 8059323000.0
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "대표:expressed_as"
+   ],
+   "must": "get_term(기한이익상실) → links에서 expressed_as + value='03' 확인",
+   "watch": "WHERE ACCT_STAT_CD='03' — 코드값이 links의 value에서 왔는가, 추측인가",
+   "trap": "expressed_as 역할의 전형 — 개념이 컬럼+값 술어로 실현"
+  }
+ },
+ {
+  "id": "N04",
+  "cat": "normal",
+  "text": "대출잔액 합계 기준 상위 10명 고객과 그 잔액을 보여줘",
+  "tags": [
+   "identified_by"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "sql": "SELECT CUST_NO, SUM(LOAN_BAL_AMT) AS bal FROM LOAN_ACCT_MST GROUP BY CUST_NO ORDER BY bal DESC, CUST_NO LIMIT 10",
+   "answer": {
+    "row_count": 10,
+    "rows": [
+     {
+      "CUST_NO": "CU001206",
+      "bal": 1324322000.0
+     },
+     {
+      "CUST_NO": "CU001260",
+      "bal": 1306678000.0
+     },
+     {
+      "CUST_NO": "CU001216",
+      "bal": 1270217000.0
+     },
+     {
+      "CUST_NO": "CU001243",
+      "bal": 1230867000.0
+     },
+     {
+      "CUST_NO": "CU000291",
+      "bal": 1222347000.0
+     },
+     {
+      "CUST_NO": "CU000681",
+      "bal": 1211872000.0
+     },
+     {
+      "CUST_NO": "CU001051",
+      "bal": 1161844000.0
+     },
+     {
+      "CUST_NO": "CU001422",
+      "bal": 1133420000.0
+     },
+     {
+      "CUST_NO": "CU000033",
+      "bal": 1075459000.0
+     },
+     {
+      "CUST_NO": "CU001392",
+      "bal": 1039395000.0
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "대표:identified_by"
+   ],
+   "must": "get_term(고객) → identified_by CUST_NO → GROUP BY CUST_NO ORDER BY bal DESC LIMIT 10",
+   "watch": "고객 식별자가 GROUP BY 앵커로 쓰였는가",
+   "trap": "identified_by 역할의 전형 — 엔티티 기준 집계"
+  }
+ },
+ {
+  "id": "N05",
+  "cat": "normal",
+  "text": "면세(Y)로 처리된 대출 신청의 면제 사유별 건수 분포는?",
+  "tags": [
+   "attribute_of",
+   "codedict"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT TAX_EXMP_RSN_CD, COUNT(*) AS cnt FROM LOAN_APPL_HIST WHERE TAX_EXMP_FLG='Y' GROUP BY TAX_EXMP_RSN_CD ORDER BY TAX_EXMP_RSN_CD",
+   "answer": {
+    "row_count": 4,
+    "rows": [
+     {
+      "TAX_EXMP_RSN_CD": "01",
+      "cnt": 99
+     },
+     {
+      "TAX_EXMP_RSN_CD": "02",
+      "cnt": 156
+     },
+     {
+      "TAX_EXMP_RSN_CD": "03",
+      "cnt": 121
+     },
+     {
+      "TAX_EXMP_RSN_CD": "04",
+      "cnt": 69
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N06",
+  "cat": "normal",
+  "text": "2026년 4월에 신청된 대출은 몇 건이야?",
+  "tags": [
+   "dated_by"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "sql": "SELECT COUNT(*) AS cnt FROM LOAN_APPL_HIST WHERE LOAN_APPL_DT BETWEEN '2026-04-01' AND '2026-04-30'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "cnt": 132
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N07",
+  "cat": "normal",
+  "text": "2026년 안에 만기가 도래하는 대출 계좌는 몇 개야?",
+  "tags": [
+   "dated_by",
+   "dated_trap"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "sql": "SELECT COUNT(*) AS cnt FROM LOAN_ACCT_MST WHERE LOAN_EXP_DT LIKE '2026-%' AND ACCT_STAT_CD NOT IN ('04','05')",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "cnt": 413
+     }
+    ],
+    "truncated": false
+   },
+   "alternatives": [
+    {
+     "sql": "SELECT COUNT(*) AS cnt FROM LOAN_ACCT_MST WHERE LOAN_EXP_DT LIKE '2026-%'",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "cnt": 463
+       }
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N08",
+  "cat": "normal",
+  "text": "지역별 고객 수를 보여줘",
+  "tags": [
+   "segmented_by",
+   "codedict"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT REGION_CD, COUNT(*) AS cnt FROM CUST_BASE_INFO GROUP BY REGION_CD ORDER BY REGION_CD",
+   "answer": {
+    "row_count": 6,
+    "rows": [
+     {
+      "REGION_CD": "BS",
+      "cnt": 176
+     },
+     {
+      "REGION_CD": "DG",
+      "cnt": 121
+     },
+     {
+      "REGION_CD": "ETC",
+      "cnt": 194
+     },
+     {
+      "REGION_CD": "GG",
+      "cnt": 383
+     },
+     {
+      "REGION_CD": "IC",
+      "cnt": 139
+     },
+     {
+      "REGION_CD": "SE",
+      "cnt": 487
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "대표:segmented_by"
+   ],
+   "must": "get_term(지역) → segmented_by CUST_BASE_INFO.REGION_CD → resolve_code로 라벨 확인",
+   "watch": "GROUP BY REGION_CD — 코드사전을 조회했는가",
+   "trap": "segmented_by 역할 + codedict 조합의 기본 패턴"
+  }
+ },
+ {
+  "id": "N09",
+  "cat": "normal",
+  "text": "2026년 1분기 업종별 카드 매출 총액은? (취소 건 제외)",
+  "tags": [
+   "segmented_by",
+   "join"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "get_join_path",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT m.BIZ_TYPE_CD, SUM(s.SLS_AMT) AS amt FROM CARD_SLS_HIST s JOIN MRCHT_INFO m ON s.MRCHT_NO=m.MRCHT_NO WHERE s.APRV_DT BETWEEN '2026-01-01' AND '2026-03-31' AND s.CNCL_YN='N' GROUP BY m.BIZ_TYPE_CD ORDER BY m.BIZ_TYPE_CD",
+   "answer": {
+    "row_count": 7,
+    "rows": [
+     {
+      "BIZ_TYPE_CD": "01",
+      "amt": 2680398200.0
+     },
+     {
+      "BIZ_TYPE_CD": "02",
+      "amt": 2134171700.0
+     },
+     {
+      "BIZ_TYPE_CD": "03",
+      "amt": 825298800.0
+     },
+     {
+      "BIZ_TYPE_CD": "04",
+      "amt": 634286000.0
+     },
+     {
+      "BIZ_TYPE_CD": "05",
+      "amt": 1570782800.0
+     },
+     {
+      "BIZ_TYPE_CD": "06",
+      "amt": 403548000.0
+     },
+     {
+      "BIZ_TYPE_CD": "07",
+      "amt": 158540300.0
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N10",
+  "cat": "normal",
+  "text": "리볼빙으로 결제되는 청구 비중이 얼마나 돼?",
+  "tags": [
+   "expressed_as",
+   "measured_by"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "get_metric"
+  ],
+  "golden": {
+   "sql": "SELECT ROUND(COUNT(CASE WHEN RPYMT_MTHD_CD='3' THEN 1 END)*1.0/COUNT(*),4) AS rate FROM CARD_BILL_HIST",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "rate": 0.1249
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N11",
+  "cat": "normal",
+  "text": "2026년 5월의 입금 총액과 출금 총액을 각각 알려줘",
+  "tags": [
+   "expressed_as",
+   "codedict"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT TXN_TYPE_CD, SUM(TXN_AMT) AS amt FROM DEP_TXN_HIST WHERE TXN_DT BETWEEN '2026-05-01' AND '2026-05-31' GROUP BY TXN_TYPE_CD ORDER BY TXN_TYPE_CD",
+   "answer": {
+    "row_count": 2,
+    "rows": [
+     {
+      "TXN_TYPE_CD": "D",
+      "amt": 3849917700.0
+     },
+     {
+      "TXN_TYPE_CD": "W",
+      "amt": 3522571900.0
+     }
+    ],
+    "truncated": false
+   },
+   "alternatives": [
+    {
+     "sql": "SELECT SUM(CASE WHEN TXN_TYPE_CD='D' THEN TXN_AMT ELSE 0 END) AS d_amt, SUM(CASE WHEN TXN_TYPE_CD='W' THEN TXN_AMT ELSE 0 END) AS w_amt FROM DEP_TXN_HIST WHERE TXN_DT BETWEEN '2026-05-01' AND '2026-05-31'",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "d_amt": 3849917700.0,
+        "w_amt": 3522571900.0
+       }
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N12",
+  "cat": "normal",
+  "text": "대출 승인율이 얼마야?",
+  "tags": [
+   "measured_by",
+   "metric_trap"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "get_metric"
+  ],
+  "golden": {
+   "sql": "SELECT ROUND(COUNT(CASE WHEN APPL_STAT_CD='03' THEN 1 END)*1.0/COUNT(CASE WHEN APPL_STAT_CD IN ('03','04') THEN 1 END),4) AS rate FROM LOAN_APPL_HIST",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "rate": 0.7149
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "함정"
+   ],
+   "must": "get_metric(M_APRV_RATE) 호출 → 분모가 '심사 완료(승인+거절)' 건인지 확인",
+   "watch": "APPL_STAT_CD IN ('03','04') 가 분모에 있는가, COUNT(*) 로 전체를 쓰지 않았는가",
+   "trap": "분모를 전체 신청으로 쓰면 72% → 골든 71.49% — 방향도 함께 틀림"
+  }
+ },
+ {
+  "id": "N13",
+  "cat": "normal",
+  "text": "방카슈랑스 동의율은?",
+  "tags": [
+   "measured_by",
+   "metric_trap"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "get_metric"
+  ],
+  "golden": {
+   "sql": "SELECT ROUND(COUNT(CASE WHEN BNS_CD='Y' THEN 1 END)*1.0/COUNT(CASE WHEN BNS_CD<>'X' THEN 1 END),4) AS rate FROM LOAN_APPL_HIST",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "rate": 0.4037
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "함정"
+   ],
+   "must": "get_metric(M_BNS_CNSNT_RATE) 호출 → BNS_CD<>'X' 조건 확인",
+   "watch": "분모에서 X(해당없음) 제외 여부",
+   "trap": "X 포함 시 29.98% → 골든 40.37% — 10%p 차이"
+  }
+ },
+ {
+  "id": "N14",
+  "cat": "normal",
+  "text": "현재 운용 중인 대출의 평균 금리는?",
+  "tags": [
+   "measured_by",
+   "metric_trap"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "get_metric"
+  ],
+  "golden": {
+   "sql": "SELECT ROUND(AVG(INT_RATE),3) AS avg_rate FROM LOAN_ACCT_MST WHERE ACCT_STAT_CD NOT IN ('04','05')",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "avg_rate": 6.477
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "함정"
+   ],
+   "must": "get_metric(M_AVG_INT_RATE) 호출 → 상각·완제 계좌 제외 필터 확인",
+   "watch": "WHERE ACCT_STAT_CD NOT IN ('04','05') 포함 여부",
+   "trap": "종료 계좌 포함 시 평균 금리가 낮아짐"
+  }
+ },
+ {
+  "id": "N15",
+  "cat": "normal",
+  "text": "담보 유형별 담보 평가액 합계를 보여줘",
+  "tags": [
+   "segmented_by",
+   "codedict"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT CLTRL_TYPE_CD, SUM(CLTRL_VAL_AMT) AS amt FROM LOAN_CLTRL_INFO GROUP BY CLTRL_TYPE_CD ORDER BY CLTRL_TYPE_CD",
+   "answer": {
+    "row_count": 5,
+    "rows": [
+     {
+      "CLTRL_TYPE_CD": "01",
+      "amt": 203505980000.0
+     },
+     {
+      "CLTRL_TYPE_CD": "02",
+      "amt": 66490570000.0
+     },
+     {
+      "CLTRL_TYPE_CD": "03",
+      "amt": 40794270000.0
+     },
+     {
+      "CLTRL_TYPE_CD": "04",
+      "amt": 39185980000.0
+     },
+     {
+      "CLTRL_TYPE_CD": "05",
+      "amt": 59638060000.0
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N16",
+  "cat": "normal",
+  "text": "2026년에 만기 연장이 처리된 건수는?",
+  "tags": [
+   "dated_by"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "sql": "SELECT COUNT(*) AS cnt FROM LOAN_EXTN_HIST WHERE EXTN_DT LIKE '2026-%'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "cnt": 238
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N17",
+  "cat": "normal",
+  "text": "2026년 월별 중도상환 건수 추이를 보여줘",
+  "tags": [
+   "dated_by"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "sql": "SELECT substr(ERLY_RPYMT_DT,1,7) AS ym, COUNT(*) AS cnt FROM LOAN_ERLY_RPYMT_HIST WHERE ERLY_RPYMT_DT LIKE '2026-%' GROUP BY ym ORDER BY ym",
+   "answer": {
+    "row_count": 5,
+    "rows": [
+     {
+      "ym": "2026-01",
+      "cnt": 24
+     },
+     {
+      "ym": "2026-02",
+      "cnt": 42
+     },
+     {
+      "ym": "2026-03",
+      "cnt": 45
+     },
+     {
+      "ym": "2026-04",
+      "cnt": 58
+     },
+     {
+      "ym": "2026-05",
+      "cnt": 59
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N18",
+  "cat": "normal",
+  "text": "VIP 고객들의 대출잔액 총액은?",
+  "tags": [
+   "expressed_as",
+   "join"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code",
+   "get_join_path"
+  ],
+  "golden": {
+   "sql": "SELECT SUM(l.LOAN_BAL_AMT) AS total FROM LOAN_ACCT_MST l JOIN CUST_BASE_INFO c ON l.CUST_NO=c.CUST_NO WHERE c.CUST_GRD_CD='V'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "total": 15889626000.0
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N19",
+  "cat": "normal",
+  "text": "2026년 5월 기준 충당금 산정 총액은?",
+  "tags": [
+   "stored_as"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "sql": "SELECT SUM(PROV_AMT) AS total FROM PROV_CALC_HIST WHERE CALC_YM='202605'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "total": 12149609000.0
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "오류"
+   ],
+   "must": "get_column(PROV_CALC_HIST.CALC_YM) → Description 'YYYYMM' 형식 확인",
+   "watch": "WHERE CALC_YM = '202605' 인가, '2026-05' 인가 — 후자면 0행",
+   "trap": "get_term·get_column 조회는 맞게 했는데 Description의 형식 증거를 안 읽은 케이스. B03(폴백 성공)과 대비되는 쌍"
+  }
+ },
+ {
+  "id": "N20",
+  "cat": "normal",
+  "text": "2025년 이후 탐지된 이상거래 중 보이스피싱은 몇 건이야?",
+  "tags": [
+   "expressed_as",
+   "codedict"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT COUNT(*) AS cnt FROM FRAUD_DTCT_HIST WHERE DTCT_TYPE_CD='03' AND DTCT_DT>='2025-01-01'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "cnt": 94
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N21",
+  "cat": "normal",
+  "text": "신용등급 3등급 이내(우량)로 평가된 신용평가 건수는?",
+  "tags": [
+   "codedict",
+   "ordinal"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT COUNT(*) AS cnt FROM CRDT_EVAL_HIST WHERE CAST(CRDT_GRD_CD AS INTEGER)<=3",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "cnt": 1530
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N22",
+  "cat": "normal",
+  "text": "고객별 최신 신용평가 점수가 높은 상위 5명을 점수와 함께 보여줘",
+  "tags": [
+   "identified_by",
+   "groupwise"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "sql": "SELECT e.CUST_NO, e.CRDT_SCR FROM CRDT_EVAL_HIST e WHERE e.EVAL_DT=(SELECT MAX(EVAL_DT) FROM CRDT_EVAL_HIST x WHERE x.CUST_NO=e.CUST_NO) GROUP BY e.CUST_NO ORDER BY e.CRDT_SCR DESC, e.CUST_NO LIMIT 5",
+   "answer": {
+    "row_count": 5,
+    "rows": [
+     {
+      "CUST_NO": "CU001256",
+      "CRDT_SCR": 1000
+     },
+     {
+      "CUST_NO": "CU001324",
+      "CRDT_SCR": 1000
+     },
+     {
+      "CUST_NO": "CU000849",
+      "CRDT_SCR": 999
+     },
+     {
+      "CUST_NO": "CU000006",
+      "CRDT_SCR": 993
+     },
+     {
+      "CUST_NO": "CU000735",
+      "CRDT_SCR": 985
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N23",
+  "cat": "normal",
+  "text": "정책대출 상품으로 실행된 대출 계좌 수는?",
+  "tags": [
+   "expressed_as",
+   "join"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code",
+   "get_join_path"
+  ],
+  "golden": {
+   "sql": "SELECT COUNT(*) AS cnt FROM LOAN_ACCT_MST l JOIN LOAN_PRDT_MST p ON l.PRDT_CD=p.PRDT_CD WHERE p.PRDT_TYPE_CD='04'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "cnt": 553
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N24",
+  "cat": "normal",
+  "text": "마케팅 수신에 동의한 비율이 얼마야?",
+  "tags": [
+   "measured_by",
+   "metric_trap"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "get_metric"
+  ],
+  "golden": {
+   "sql": "SELECT ROUND(COUNT(CASE WHEN CNSNT_YN='Y' THEN 1 END)*1.0/COUNT(*),4) AS rate FROM CUST_CNSNT_INFO WHERE CNSNT_ITEM_CD='01'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "rate": 0.6386
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "N25",
+  "cat": "normal",
+  "text": "2026년 들어 새로 발생한 대출 연체는 몇 건이야?",
+  "tags": [
+   "dated_by"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "sql": "SELECT COUNT(*) AS cnt FROM LOAN_DLNQ_HIST WHERE DLNQ_OCUR_DT LIKE '2026-%'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "cnt": 364
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "F01",
+  "cat": "family",
+  "text": "연체율이 어떻게 돼?",
+  "tags": [
+   "F5_dlnq",
+   "clarify"
+  ],
+  "mode": "clarify",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "policy": "확인요청=정답 · 가정명시+한쪽답=부분정답 · 무가정단일답=오답 (D8)",
+   "interpretations": [
+    {
+     "label": "대출연체율",
+     "sql": "SELECT ROUND(COUNT(CASE WHEN DLNQ_FLG='Y' THEN 1 END)*1.0/COUNT(*),4) AS rate FROM LOAN_ACCT_MST WHERE ACCT_STAT_CD NOT IN ('04','05')",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "rate": 0.0853
+       }
+      ],
+      "truncated": false
+     }
+    },
+    {
+     "label": "카드연체율",
+     "sql": "SELECT ROUND(COUNT(CASE WHEN DLNQ_FLG='Y' THEN 1 END)*1.0/COUNT(*),4) AS rate FROM CARD_BILL_HIST",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "rate": 0.0408
+       }
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  "checkpoint": {
+   "markers": [
+    "D8"
+   ],
+   "must": "resolve_terms에서 대출연체·카드연체 양 후보 확인 → clarify 또는 가정 명시",
+   "watch": "후보 두 개가 떴는데 조용히 한쪽으로 갔는가(D8 오답)",
+   "trap": "가정 없는 단일 답은 값이 맞아도 오답. 확인 요청이 정답"
+  }
+ },
+ {
+  "id": "F02",
+  "cat": "family",
+  "text": "해지된 계좌가 총 몇 개야?",
+  "tags": [
+   "F2_status",
+   "clarify"
+  ],
+  "mode": "clarify",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "policy": "확인요청=정답 · 가정명시+한쪽답=부분정답 · 무가정단일답=오답 (D8)",
+   "interpretations": [
+    {
+     "label": "수신계좌 해지",
+     "sql": "SELECT COUNT(*) AS cnt FROM DEP_ACCT_MST WHERE ACCT_STAT_CD='40'",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "cnt": 398
+       }
+      ],
+      "truncated": false
+     }
+    },
+    {
+     "label": "카드 해지",
+     "sql": "SELECT COUNT(*) AS cnt FROM CARD_MST WHERE CARD_STAT_CD='T'",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "cnt": 179
+       }
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  "checkpoint": {
+   "markers": [
+    "D8"
+   ],
+   "must": "수신계좌 해지(ACCT_STAT_CD='40')와 카드 해지(CARD_STAT_CD='T') 양 후보 확인",
+   "watch": "도메인 확인 없이 한쪽만 쿼리하는가",
+   "trap": "'해지'가 수신과 카드 두 테이블에 걸림"
+  }
+ },
+ {
+  "id": "F03",
+  "cat": "family",
+  "text": "골드 등급인 고객이 몇 명이야?",
+  "tags": [
+   "F1_grade",
+   "clarify"
+  ],
+  "mode": "clarify",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "policy": "확인요청=정답 · 가정명시+한쪽답=부분정답 · 무가정단일답=오답 (D8)",
+   "interpretations": [
+    {
+     "label": "고객등급 골드",
+     "sql": "SELECT COUNT(*) AS cnt FROM CUST_BASE_INFO WHERE CUST_GRD_CD='G'",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "cnt": 252
+       }
+      ],
+      "truncated": false
+     }
+    },
+    {
+     "label": "골드 카드 보유 고객",
+     "sql": "SELECT COUNT(DISTINCT CUST_NO) AS cnt FROM CARD_MST WHERE CARD_GRD_CD='G'",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "cnt": 597
+       }
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  "checkpoint": {
+   "markers": [
+    "D8"
+   ],
+   "must": "고객등급 골드(CUST_GRD_CD='G')와 카드등급 골드(CARD_GRD_CD='G') 구분",
+   "watch": "F1 패밀리 충돌 — 등급이 세 도메인에 걸림. 어느 등급인지 확인하는가",
+   "trap": "'골드'가 고객등급·카드등급 둘 다에 존재 — 값이 같아도 테이블이 다름"
+  }
+ },
+ {
+  "id": "F04",
+  "cat": "family",
+  "text": "상환방식별 건수 분포를 보여줘",
+  "tags": [
+   "F3_repayment",
+   "clarify"
+  ],
+  "mode": "clarify",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "policy": "확인요청=정답 · 가정명시+한쪽답=부분정답 · 무가정단일답=오답 (D8)",
+   "interpretations": [
+    {
+     "label": "대출 상환방식",
+     "sql": "SELECT RPYMT_MTHD_CD, COUNT(*) AS cnt FROM LOAN_ACCT_MST GROUP BY RPYMT_MTHD_CD ORDER BY RPYMT_MTHD_CD",
+     "answer": {
+      "row_count": 3,
+      "rows": [
+       {
+        "RPYMT_MTHD_CD": "01",
+        "cnt": 1913
+       },
+       {
+        "RPYMT_MTHD_CD": "02",
+        "cnt": 812
+       },
+       {
+        "RPYMT_MTHD_CD": "03",
+        "cnt": 697
+       }
+      ],
+      "truncated": false
+     }
+    },
+    {
+     "label": "카드 결제방식",
+     "sql": "SELECT RPYMT_MTHD_CD, COUNT(*) AS cnt FROM CARD_BILL_HIST GROUP BY RPYMT_MTHD_CD ORDER BY RPYMT_MTHD_CD",
+     "answer": {
+      "row_count": 3,
+      "rows": [
+       {
+        "RPYMT_MTHD_CD": "1",
+        "cnt": 13917
+       },
+       {
+        "RPYMT_MTHD_CD": "2",
+        "cnt": 3666
+       },
+       {
+        "RPYMT_MTHD_CD": "3",
+        "cnt": 2510
+       }
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  "checkpoint": {
+   "markers": [
+    "D8"
+   ],
+   "must": "대출상환방식(LOAN_ACCT_MST.RPYMT_MTHD_CD)과 카드결제방식(CARD_BILL_HIST.RPYMT_MTHD_CD) 구분",
+   "watch": "F3 패밀리 — 코드체계가 완전히 다름",
+   "trap": "'상환방식' 동의어가 두 도메인에 걸림 — 코드값 체계가 완전히 달라서 혼용하면 전혀 다른 결과"
+  }
+ },
+ {
+  "id": "F05",
+  "cat": "family",
+  "text": "전체 잔액 합계가 얼마야?",
+  "tags": [
+   "F6_balance",
+   "clarify"
+  ],
+  "mode": "clarify",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "policy": "확인요청=정답 · 가정명시+한쪽답=부분정답 · 무가정단일답=오답 (D8)",
+   "interpretations": [
+    {
+     "label": "대출잔액 총계(완제 제외)",
+     "sql": "SELECT SUM(LOAN_BAL_AMT) AS total FROM LOAN_ACCT_MST WHERE ACCT_STAT_CD <> '05'",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "total": 382773826000.0
+       }
+      ],
+      "truncated": false
+     }
+    },
+    {
+     "label": "예금잔액 총계(해지 제외)",
+     "sql": "SELECT SUM(ACCT_BAL_AMT) AS total FROM DEP_ACCT_MST WHERE ACCT_STAT_CD <> '40'",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "total": 339964749000.0
+       }
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  "checkpoint": {
+   "markers": [
+    "D8"
+   ],
+   "must": "대출잔액(완제 제외)과 예금잔액(해지 제외) 양 후보 확인",
+   "watch": "F6 패밀리 — 부채와 자산의 잔액이 '잔액' 하나로 통칭됨",
+   "trap": "두 숫자가 1.5조 vs 2800억으로 완전히 다른 차원"
+  }
+ },
+ {
+  "id": "F06",
+  "cat": "family",
+  "text": "거래중지 상태인 수신계좌 목록을 보여줘",
+  "tags": [
+   "F2_status",
+   "precision"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT DEP_ACCT_NO, CUST_NO, ACCT_BAL_AMT FROM DEP_ACCT_MST WHERE ACCT_STAT_CD='30' ORDER BY DEP_ACCT_NO",
+   "answer": {
+    "row_count": 264,
+    "rows": [
+     {
+      "DEP_ACCT_NO": "DP0000026",
+      "CUST_NO": "CU000045",
+      "ACCT_BAL_AMT": 175311000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000049",
+      "CUST_NO": "CU000591",
+      "ACCT_BAL_AMT": 138458000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000057",
+      "CUST_NO": "CU001317",
+      "ACCT_BAL_AMT": 62469000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000061",
+      "CUST_NO": "CU001082",
+      "ACCT_BAL_AMT": 150977000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000100",
+      "CUST_NO": "CU001202",
+      "ACCT_BAL_AMT": 116958000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000152",
+      "CUST_NO": "CU001050",
+      "ACCT_BAL_AMT": 52632000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000159",
+      "CUST_NO": "CU001308",
+      "ACCT_BAL_AMT": 138351000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000174",
+      "CUST_NO": "CU000825",
+      "ACCT_BAL_AMT": 187554000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000185",
+      "CUST_NO": "CU000016",
+      "ACCT_BAL_AMT": 105576000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000220",
+      "CUST_NO": "CU000093",
+      "ACCT_BAL_AMT": 101921000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000224",
+      "CUST_NO": "CU001080",
+      "ACCT_BAL_AMT": 42666000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000231",
+      "CUST_NO": "CU000086",
+      "ACCT_BAL_AMT": 53951000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000250",
+      "CUST_NO": "CU000227",
+      "ACCT_BAL_AMT": 153540000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000251",
+      "CUST_NO": "CU000426",
+      "ACCT_BAL_AMT": 166233000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000252",
+      "CUST_NO": "CU000269",
+      "ACCT_BAL_AMT": 66633000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000253",
+      "CUST_NO": "CU000140",
+      "ACCT_BAL_AMT": 175429000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000267",
+      "CUST_NO": "CU000884",
+      "ACCT_BAL_AMT": 195148000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000295",
+      "CUST_NO": "CU000807",
+      "ACCT_BAL_AMT": 190937000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000330",
+      "CUST_NO": "CU001398",
+      "ACCT_BAL_AMT": 170462000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000366",
+      "CUST_NO": "CU000515",
+      "ACCT_BAL_AMT": 46858000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000409",
+      "CUST_NO": "CU000024",
+      "ACCT_BAL_AMT": 165331000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000414",
+      "CUST_NO": "CU001014",
+      "ACCT_BAL_AMT": 5711000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000425",
+      "CUST_NO": "CU000796",
+      "ACCT_BAL_AMT": 59388000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000435",
+      "CUST_NO": "CU000631",
+      "ACCT_BAL_AMT": 61305000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000447",
+      "CUST_NO": "CU000015",
+      "ACCT_BAL_AMT": 97712000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000448",
+      "CUST_NO": "CU000394",
+      "ACCT_BAL_AMT": 108972000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000454",
+      "CUST_NO": "CU000611",
+      "ACCT_BAL_AMT": 113495000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000471",
+      "CUST_NO": "CU001086",
+      "ACCT_BAL_AMT": 69365000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000477",
+      "CUST_NO": "CU000554",
+      "ACCT_BAL_AMT": 34726000.0
+     },
+     {
+      "DEP_ACCT_NO": "DP0000488",
+      "CUST_NO": "CU000416",
+      "ACCT_BAL_AMT": 93043000.0
+     }
+    ],
+    "truncated": true
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "F07",
+  "cat": "family",
+  "text": "정지된 카드는 몇 장이야?",
+  "tags": [
+   "F2_status",
+   "precision"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT COUNT(*) AS cnt FROM CARD_MST WHERE CARD_STAT_CD='S'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "cnt": 93
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "F08",
+  "cat": "family",
+  "text": "2026년 6월에 만기가 돌아오는 건이 몇 개야?",
+  "tags": [
+   "F7_maturity",
+   "clarify"
+  ],
+  "mode": "clarify",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "policy": "확인요청=정답 · 가정명시+한쪽답=부분정답 · 무가정단일답=오답 (D8)",
+   "interpretations": [
+    {
+     "label": "대출 만기",
+     "sql": "SELECT COUNT(*) AS cnt FROM LOAN_ACCT_MST WHERE LOAN_EXP_DT LIKE '2026-06-%' AND ACCT_STAT_CD NOT IN ('04','05')",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "cnt": 27
+       }
+      ],
+      "truncated": false
+     }
+    },
+    {
+     "label": "예금 만기",
+     "sql": "SELECT COUNT(*) AS cnt FROM DEP_ACCT_MST WHERE MTRT_DT LIKE '2026-06-%' AND ACCT_STAT_CD <> '40'",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "cnt": 25
+       }
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  "checkpoint": {
+   "markers": [
+    "D8"
+   ],
+   "must": "대출만기(LOAN_EXP_DT)와 예금만기(MTRT_DT) 양 후보 확인",
+   "watch": "F7 패밀리(드라이런 발견) — 두 테이블·두 컬럼",
+   "trap": "'만기' 하나가 대출 계약 종료와 예금 만기 모두에 쓰임"
+  }
+ },
+ {
+  "id": "G01",
+  "cat": "granularity",
+  "text": "대출금액 총액이 얼마야?",
+  "tags": [
+   "clarify"
+  ],
+  "mode": "clarify",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "policy": "확인요청=정답 · 가정명시+한쪽답=부분정답 · 무가정단일답=오답 (D8)",
+   "interpretations": [
+    {
+     "label": "신청금액 기준",
+     "sql": "SELECT SUM(LOAN_AMT) AS total FROM LOAN_APPL_HIST",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "total": 1514144320000.0
+       }
+      ],
+      "truncated": false
+     }
+    },
+    {
+     "label": "실행금액 기준",
+     "sql": "SELECT SUM(DSBR_AMT) AS total FROM LOAN_ACCT_MST",
+     "answer": {
+      "row_count": 1,
+      "rows": [
+       {
+        "total": 734238640000.0
+       }
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  "checkpoint": {
+   "markers": [
+    "D8"
+   ],
+   "must": "대출신청금액(LOAN_AMT)과 대출실행금액(DSBR_AMT) 입도 구분",
+   "watch": "두 값의 차이가 2배(1.51조 vs 7,342억) — 어느 금액인지 가정 명시 여부",
+   "trap": "'대출금액'이 신청 단계와 실행 단계 두 개념에 걸림 — 입도 함정"
+  }
+ },
+ {
+  "id": "G02",
+  "cat": "granularity",
+  "text": "승인된 대출 신청이 몇 건이야?",
+  "tags": [
+   "precision"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "sql": "SELECT COUNT(*) AS cnt FROM LOAN_APPL_HIST WHERE APPL_STAT_CD='03'",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "cnt": 3763
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "G03",
+  "cat": "granularity",
+  "text": "대출 상태별 건수 분포를 보여줘",
+  "tags": [
+   "clarify"
+  ],
+  "mode": "clarify",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "policy": "확인요청=정답 · 가정명시+한쪽답=부분정답 · 무가정단일답=오답 (D8)",
+   "interpretations": [
+    {
+     "label": "신청상태 기준",
+     "sql": "SELECT APPL_STAT_CD, COUNT(*) AS cnt FROM LOAN_APPL_HIST GROUP BY APPL_STAT_CD ORDER BY APPL_STAT_CD",
+     "answer": {
+      "row_count": 5,
+      "rows": [
+       {
+        "APPL_STAT_CD": "01",
+        "cnt": 196
+       },
+       {
+        "APPL_STAT_CD": "02",
+        "cnt": 255
+       },
+       {
+        "APPL_STAT_CD": "03",
+        "cnt": 3763
+       },
+       {
+        "APPL_STAT_CD": "04",
+        "cnt": 1501
+       },
+       {
+        "APPL_STAT_CD": "05",
+        "cnt": 285
+       }
+      ],
+      "truncated": false
+     }
+    },
+    {
+     "label": "계좌상태 기준",
+     "sql": "SELECT ACCT_STAT_CD, COUNT(*) AS cnt FROM LOAN_ACCT_MST GROUP BY ACCT_STAT_CD ORDER BY ACCT_STAT_CD",
+     "answer": {
+      "row_count": 5,
+      "rows": [
+       {
+        "ACCT_STAT_CD": "01",
+        "cnt": 2800
+       },
+       {
+        "ACCT_STAT_CD": "02",
+        "cnt": 209
+       },
+       {
+        "ACCT_STAT_CD": "03",
+        "cnt": 52
+       },
+       {
+        "ACCT_STAT_CD": "04",
+        "cnt": 37
+       },
+       {
+        "ACCT_STAT_CD": "05",
+        "cnt": 324
+       }
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  "checkpoint": {
+   "markers": [
+    "D8"
+   ],
+   "must": "신청상태(LOAN_APPL_HIST)와 계좌상태(LOAN_ACCT_MST) 두 테이블 구분",
+   "watch": "'대출상태' 동의어가 양쪽에 걸림 — 어느 입도인지 확인하는가",
+   "trap": "패치 반영 문항 — 재실행 필요"
+  }
+ },
+ {
+  "id": "G04",
+  "cat": "granularity",
+  "text": "가장 최근에 신용평가를 받은 10건의 고객번호와 등급을 보여줘",
+  "tags": [
+   "broad_term"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term"
+  ],
+  "golden": {
+   "sql": "SELECT CUST_NO, CRDT_GRD_CD FROM CRDT_EVAL_HIST ORDER BY EVAL_DT DESC, EVAL_NO DESC LIMIT 10",
+   "answer": {
+    "row_count": 10,
+    "rows": [
+     {
+      "CUST_NO": "CU001380",
+      "CRDT_GRD_CD": "7"
+     },
+     {
+      "CUST_NO": "CU001010",
+      "CRDT_GRD_CD": "10"
+     },
+     {
+      "CUST_NO": "CU001349",
+      "CRDT_GRD_CD": "9"
+     },
+     {
+      "CUST_NO": "CU001061",
+      "CRDT_GRD_CD": "1"
+     },
+     {
+      "CUST_NO": "CU001292",
+      "CRDT_GRD_CD": "8"
+     },
+     {
+      "CUST_NO": "CU001067",
+      "CRDT_GRD_CD": "2"
+     },
+     {
+      "CUST_NO": "CU001067",
+      "CRDT_GRD_CD": "6"
+     },
+     {
+      "CUST_NO": "CU000628",
+      "CRDT_GRD_CD": "1"
+     },
+     {
+      "CUST_NO": "CU000550",
+      "CRDT_GRD_CD": "2"
+     },
+     {
+      "CUST_NO": "CU001141",
+      "CRDT_GRD_CD": "10"
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [],
+   "must": "레이어 연산 순서 확인 (resolve_terms → get_term → SQL)",
+   "watch": "expected_ops 목록과 실제 호출 연산 일치 여부"
+  }
+ },
+ {
+  "id": "B01",
+  "cat": "boundary",
+  "text": "모바일 채널로 신청된 대출이 몇 건이야?",
+  "tags": [
+   "no_codedict"
+  ],
+  "mode": "missing",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "expected_behavior": "CHNL_CD의 코드값 사전이 레이어에 없음 — '모바일'에 해당하는 코드값을 추측하지 말고 사전 부재를 보고하거나 값 라벨 확인을 요청해야 함",
+   "world_truth": {
+    "sql": "SELECT COUNT(*) AS cnt FROM LOAN_APPL_HIST WHERE CHNL_CD='02'",
+    "answer": {
+     "row_count": 1,
+     "rows": [
+      {
+       "cnt": 2547
+      }
+     ],
+     "truncated": false
+    }
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "경계"
+   ],
+   "must": "resolve_code(LOAN_APPL_HIST.CHNL_CD, '모바일') → 사전 부재 응답 확인",
+   "watch": "에이전트가 코드값을 추측해 SQL에 리터럴로 넣는가(='02' 등) → hallucination 플래그",
+   "trap": "추측 금지 — 사전 부재를 보고하거나 clarify 해야 정답. 코드값 단정은 플래그"
+  }
+ },
+ {
+  "id": "B02",
+  "cat": "boundary",
+  "text": "접촉 유형별 고객 상담 건수 분포를 보여줘",
+  "tags": [
+   "no_codedict"
+  ],
+  "mode": "missing",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code"
+  ],
+  "golden": {
+   "expected_behavior": "CNTC_TYPE_CD의 코드값 사전이 레이어에 없음 — 유형별 코드는 셀 수 있으나 각 코드의 의미 라벨을 지어내면 안 됨(코드 그대로 제시+의미 미상 고지는 부분 정답)",
+   "world_truth": {
+    "sql": "SELECT CNTC_TYPE_CD, COUNT(*) AS cnt FROM CUST_CNTC_HIST GROUP BY CNTC_TYPE_CD ORDER BY CNTC_TYPE_CD",
+    "answer": {
+     "row_count": 4,
+     "rows": [
+      {
+       "CNTC_TYPE_CD": "01",
+       "cnt": 1120
+      },
+      {
+       "CNTC_TYPE_CD": "02",
+       "cnt": 372
+      },
+      {
+       "CNTC_TYPE_CD": "03",
+       "cnt": 664
+      },
+      {
+       "CNTC_TYPE_CD": "04",
+       "cnt": 344
+      }
+     ],
+     "truncated": false
+    }
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "경계"
+   ],
+   "must": "resolve_code(CUST_CNTC_HIST.CNTC_TYPE_CD) → 사전 부재 응답 확인",
+   "watch": "코드값에 한글 의미 라벨을 CASE WHEN으로 발명하는가 → hallucination 플래그",
+   "trap": "코드 그대로 GROUP BY 후 '의미 미상' 고지는 부분 정답, 라벨 발명은 오답+플래그"
+  }
+ },
+ {
+  "id": "B03",
+  "cat": "boundary",
+  "text": "중도상환수수료로 들어온 수입 총액은?",
+  "tags": [
+   "no_term",
+   "fallback"
+  ],
+  "mode": "missing",
+  "expected_ops": [
+   "resolve_terms",
+   "search_columns"
+  ],
+  "golden": {
+   "expected_behavior": "Term 미등재 — search_columns 폴백으로 ERLY_RPYMT_FEE 컬럼(Description 존재)에 도달 가능. 답하되 Link 부재로 낮은 신뢰도를 명시해야 함. 무신뢰도 단정은 부분 정답",
+   "world_truth": {
+    "sql": "SELECT SUM(ERLY_RPYMT_FEE) AS total FROM LOAN_ERLY_RPYMT_HIST",
+    "answer": {
+     "row_count": 1,
+     "rows": [
+      {
+       "total": 454081930.0
+      }
+     ],
+     "truncated": false
+    }
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "경계",
+    "폴백"
+   ],
+   "must": "resolve_terms 빈 결과 → search_columns('중도상환 수수료') 폴백 → ERLY_RPYMT_FEE 도달",
+   "watch": "폴백 사실을 assumptions에 명시했는가, confidence가 MEDIUM 이하인가",
+   "trap": "Term 미등재이므로 링크 없음 — 폴백으로 답은 낼 수 있으나 caveat 없이 단정하면 부분 정답"
+  }
+ },
+ {
+  "id": "B04",
+  "cat": "boundary",
+  "text": "휴면계좌가 몇 개나 돼?",
+  "tags": [
+   "no_term",
+   "absent"
+  ],
+  "mode": "missing",
+  "expected_ops": [
+   "resolve_terms",
+   "search_columns"
+  ],
+  "golden": {
+   "expected_behavior": "개념 완전 부재(Term도 컬럼도 분류 기준도 없음) — 지어내지 않고 레이어에 해당 개념이 없음을 보고해야 함. 임의 기준(예: 최근 N개월 미거래)으로 답하면 오답",
+   "world_truth": null
+  },
+  "checkpoint": {
+   "markers": [
+    "경계"
+   ],
+   "must": "resolve_terms + search_columns 모두 빈 결과 → cannot_answer",
+   "watch": "임의 기준(최근 N개월 미거래 등)을 발명해 SQL을 내는가",
+   "trap": "개념 자체가 레이어에 없음 — 발명 금지. 존재 자체가 없음을 보고해야 정답"
+  }
+ },
+ {
+  "id": "J01",
+  "cat": "join",
+  "text": "서울 지역 고객의 대출 연체율은?",
+  "tags": [
+   "join",
+   "metric_trap",
+   "codedict"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code",
+   "get_join_path",
+   "get_metric"
+  ],
+  "golden": {
+   "sql": "SELECT ROUND(COUNT(CASE WHEN l.DLNQ_FLG='Y' THEN 1 END)*1.0/COUNT(*),4) AS rate FROM LOAN_ACCT_MST l JOIN CUST_BASE_INFO c ON l.CUST_NO=c.CUST_NO WHERE c.REGION_CD='SE' AND l.ACCT_STAT_CD NOT IN ('04','05')",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "rate": 0.0887
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "함정",
+    "조인"
+   ],
+   "must": "get_join_path(LOAN_ACCT_MST, CUST_BASE_INFO) + get_metric(M_LOAN_DLNQ_RATE) + resolve_code(REGION_CD, '서울')",
+   "watch": "조인 경로가 FK 경유인가, 메트릭 필터(상각·완제 제외)가 지역 필터와 함께 적용됐는가",
+   "trap": "메트릭 필터 누락 또는 CUST_BASE_INFO 없이 REGION_CD를 LOAN 테이블에서 추측하는 경우"
+  }
+ },
+ {
+  "id": "J02",
+  "cat": "join",
+  "text": "플래티넘 카드를 보유한 고객들의 수신계좌 평균 잔액은? (해지 계좌 제외)",
+  "tags": [
+   "join",
+   "multihop"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "resolve_code",
+   "get_join_path"
+  ],
+  "golden": {
+   "sql": "SELECT ROUND(AVG(d.ACCT_BAL_AMT),0) AS avg_bal FROM DEP_ACCT_MST d WHERE d.ACCT_STAT_CD <> '40' AND d.CUST_NO IN (SELECT DISTINCT CUST_NO FROM CARD_MST WHERE CARD_GRD_CD='P')",
+   "answer": {
+    "row_count": 1,
+    "rows": [
+     {
+      "avg_bal": 101154557.0
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "오류"
+   ],
+   "must": "get_join_path(DEP_ACCT_MST, CARD_MST) 경로 확인 → CUST_NO 경유 다대다 경로",
+   "watch": "카드(多) × 계좌(多) 조인에서 행이 곱해지는가 — 결과가 골든보다 크면 팬아웃 발생",
+   "trap": "고객 한 명이 카드 2장·계좌 3개이면 조인 결과 6행 → 평균 왜곡. 레이어가 줄 수 없고 에이전트가 grain을 판단해야 하는 지점. 역량 측정 항목으로 보존"
+  }
+ },
+ {
+  "id": "J03",
+  "cat": "join",
+  "text": "보증이 붙은 대출과 없는 대출의 연체율을 비교해줘",
+  "tags": [
+   "join",
+   "exists",
+   "metric_trap"
+  ],
+  "mode": "sql",
+  "expected_ops": [
+   "resolve_terms",
+   "get_term",
+   "get_join_path",
+   "get_metric"
+  ],
+  "golden": {
+   "sql": "SELECT CASE WHEN EXISTS (SELECT 1 FROM LOAN_GRNT_INFO g WHERE g.LOAN_ACCT_NO=l.LOAN_ACCT_NO) THEN '보증있음' ELSE '보증없음' END AS grp, ROUND(COUNT(CASE WHEN DLNQ_FLG='Y' THEN 1 END)*1.0/COUNT(*),4) AS rate FROM LOAN_ACCT_MST l WHERE ACCT_STAT_CD NOT IN ('04','05') GROUP BY grp ORDER BY grp",
+   "answer": {
+    "row_count": 2,
+    "rows": [
+     {
+      "grp": "보증없음",
+      "rate": 0.084
+     },
+     {
+      "grp": "보증있음",
+      "rate": 0.0923
+     }
+    ],
+    "truncated": false
+   }
+  },
+  "checkpoint": {
+   "markers": [
+    "함정",
+    "조인"
+   ],
+   "must": "EXISTS 서브쿼리로 보증 유무 구분 + 두 그룹 각각 메트릭 필터 적용",
+   "watch": "보증 있음/없음 그룹 분리 방식, 상각·완제 계좌가 양쪽 분모에서 제외됐는가",
+   "trap": "메트릭 필터 누락 또는 단순 LEFT JOIN으로 보증 계좌 여러 번 집계"
+  }
+ }
+]

@@ -586,7 +586,7 @@ function RunnableSql({ db, sql, label }) {
 }
 
 const MARKER_COLOR = { "함정":"var(--low)", "경계":"var(--med)", "D8":"var(--sig)",
-  "오류":"var(--lin)", "폴백":"var(--accent)", "조인":"var(--high)", "대표":"var(--dim)" };
+  "오류":"var(--lin)", "폴백":"var(--accent)", "조인":"var(--high)", "대표":"var(--dim)", "형식":"var(--lin)" };
 const MARKER_TIP = {
   "함정": "정본 지표(get_metric)를 쓰지 않으면 숫자가 달라지게 설계된 문항 — 소박한 재계산은 오답",
   "D8":   "질문이 도메인·입도를 특정하지 않음 — 확인 질문 없이 한쪽을 고르면 값이 맞아도 오답",
@@ -594,6 +594,7 @@ const MARKER_TIP = {
   "오류": "1차 실측에서 에이전트가 실제로 틀린 문항 — 역량 측정 항목으로 보존",
   "폴백": "Term 링크 없음 — search_columns(Description 검색) 폴백만으로 접근 가능, 신뢰도 한정 필수",
   "조인": "FK 경로를 타야 풀리는 문항 — 경로와 grain 처리를 함께 검증",
+  "형식": "Description의 값 형식(YYYYMM 등)을 get_column으로 안 보면 0행 — 조회 건너뛰면 반드시 실패",
 };
 
 // 커스텀 툴팁 — 앱 토큰 스타일, 마커 위에 말풍선
