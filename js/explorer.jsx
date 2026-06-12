@@ -556,11 +556,11 @@ function QuestionView({ db, Q, route, nav }) {
           style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer",
                    background: sel === q.id ? "rgba(255,255,255,0.06)" : "transparent",
                    borderLeft: sel === q.id ? "2px solid var(--accent)" : "2px solid transparent" }}>
-          <div style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}>
-            <span style={{ ...eMono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
-            <span style={{ fontSize: 11.5, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
+          <div style={{ lineHeight: 1.5 }}>
+            <span style={{ ...eMono, fontSize: 10, color: "var(--dim)", marginRight: 5 }}>{q.id}</span>
+            <span style={{ fontSize: 11.5, color: "var(--text)" }}>{q.text}</span>
             {(q.checkpoint && q.checkpoint.markers || []).map((m) => (
-              <MarkerChip key={m} m={m} small={true} />))}
+              <span key={m} style={{ marginLeft: 5 }}><MarkerChip m={m} small={true} /></span>))}
           </div>
         </div>))}
     </div>));
