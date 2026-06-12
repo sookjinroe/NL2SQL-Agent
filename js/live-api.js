@@ -5,6 +5,19 @@
 // 모델: setModel/getModel, localStorage 'nl_model'에 유지. (구 sonnet-4는 2026-06-15 retire)
 // ============================================================
 window.LiveAPI = (function () {
+  // .env 로더 — 리포 루트의 .env(gitignore)에서 ANTHROPIC_API_KEY 를 읽는다.
+  // 로컬 실행용: Pages에는 .env가 배포되지 않으므로(gitignore) 조용히 폴백.
+  const ENV_READY = (async () => {
+    try {
+      const r = await fetch(".env", { cache: "no-store" });
+      if (r.ok) {
+        const t = await r.text();
+        const m = t.match(/^\s*ANTHROPIC_API_KEY\s*=\s*["']?(sk-ant-[A-Za-z0-9_\-]+)/m);
+        if (m && !window.ANTHROPIC_KEY) window.ANTHROPIC_KEY = m[1];
+      }
+    } catch (e) {}
+  })();
+
   const MODELS = [
     { id: "claude-haiku-4-5",  label: "Haiku 4.5 · 빠름/저렴" },
     { id: "claude-sonnet-4-6", label: "Sonnet 4.6 · 기본" },
@@ -42,6 +55,7 @@ window.LiveAPI = (function () {
   }
 
   async function complete(system, user, opts) {
+    await ENV_READY;
     const { onRetry } = opts || {};
     const headers = { "Content-Type": "application/json" };
     const key = getKey();
@@ -72,5 +86,5 @@ window.LiveAPI = (function () {
     throw lastErr;
   }
 
-  return { complete, MODELS, getModel, setModel, hasKey };
+  return { complete, MODELS, getModel, setModel, hasKey, ready: ENV_READY };
 })();

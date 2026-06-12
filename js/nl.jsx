@@ -28,6 +28,7 @@ function NLScreen() {
 
   nUseEffect(() => { (async () => {
     try {
+      if (window.LiveAPI.ready) await window.LiveAPI.ready;
       if (window.__DB) { dbRef.current = window.__DB; }
       else {
         const SQL = await initSqlJs({ locateFile: (f) => "data/" + f });
