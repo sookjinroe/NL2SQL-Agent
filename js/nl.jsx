@@ -139,8 +139,7 @@ function NLScreen() {
         </div>
         {selfCheck && <div style={{ ...mono, fontSize: 12, color: "var(--sig)", marginBottom: 8 }}>{selfCheck}</div>}
         {note && <div style={{ ...mono, fontSize: 11.5, color: "var(--med)", marginBottom: 8 }}>{note}</div>}
-        {!localStorage.getItem("anthropic_key") &&
-          <KeyBox />}
+        {!window.LiveAPI.hasKey() && <KeyBox />}
 
         {agg && <Scoreboard agg={agg} total={done.length} />}
 

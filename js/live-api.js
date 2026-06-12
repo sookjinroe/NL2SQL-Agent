@@ -1,12 +1,28 @@
 // ============================================================
-// live-api.js — 모델 호출 래퍼. 기존 PoC의 window.LiveAPI contract 호환:
-//   LiveAPI.complete(system, user, {onRetry}) → JSON 객체
-// claude.ai 안에서는 키 없이 동작(api 프록시). 로컬 실행 시
-//   localStorage.setItem('anthropic_key', 'sk-ant-...') 로 키 주입.
-// 이식 시 이 파일만 기존 앱의 LiveAPI로 교체하면 된다.
+// live-api.js — 모델 호출 래퍼. LiveAPI.complete(system, user, {onRetry}) → JSON.
+// 키 해석 순서: window.ANTHROPIC_KEY(local-config.js, gitignore) → localStorage.
+// 키는 리포에 절대 넣지 않는다 — public 리포의 키는 시크릿 스캐닝으로 자동 비활성화됨.
+// 모델: setModel/getModel, localStorage 'nl_model'에 유지. (구 sonnet-4는 2026-06-15 retire)
 // ============================================================
 window.LiveAPI = (function () {
-  const MODEL = "claude-sonnet-4-20250514";
+  const MODELS = [
+    { id: "claude-haiku-4-5",  label: "Haiku 4.5 · 빠름/저렴" },
+    { id: "claude-sonnet-4-6", label: "Sonnet 4.6 · 기본" },
+    { id: "claude-opus-4-8",   label: "Opus 4.8 · 고성능" },
+    { id: "claude-fable-5",    label: "Fable 5 · 최상위" },
+  ];
+  const DEFAULT_MODEL = "claude-sonnet-4-6";
+
+  function getModel() {
+    const m = localStorage.getItem("nl_model");
+    return MODELS.some((x) => x.id === m) ? m : DEFAULT_MODEL;
+  }
+  function setModel(id) { localStorage.setItem("nl_model", id); }
+  function getKey() {
+    return (typeof window !== "undefined" && window.ANTHROPIC_KEY) ||
+           localStorage.getItem("anthropic_key") || null;
+  }
+  function hasKey() { return !!getKey(); }
 
   function stripFence(t) {
     return t.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
@@ -14,7 +30,6 @@ window.LiveAPI = (function () {
   function parseJson(text) {
     const t = stripFence(text);
     try { return JSON.parse(t); } catch (e) {}
-    // 복구: 첫 '{'부터 짝이 맞는 '}'까지
     const s = t.indexOf("{");
     if (s >= 0) {
       let depth = 0;
@@ -29,14 +44,18 @@ window.LiveAPI = (function () {
   async function complete(system, user, opts) {
     const { onRetry } = opts || {};
     const headers = { "Content-Type": "application/json" };
-    const key = (typeof localStorage !== "undefined") && localStorage.getItem("anthropic_key");
-    if (key) { headers["x-api-key"] = key; headers["anthropic-version"] = "2023-06-01"; headers["anthropic-dangerous-direct-browser-access"] = "true"; }
+    const key = getKey();
+    if (key) {
+      headers["x-api-key"] = key;
+      headers["anthropic-version"] = "2023-06-01";
+      headers["anthropic-dangerous-direct-browser-access"] = "true";
+    }
     let lastErr = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const resp = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST", headers,
-          body: JSON.stringify({ model: MODEL, max_tokens: 1000,
+          body: JSON.stringify({ model: getModel(), max_tokens: 1000,
             system, messages: [{ role: "user", content: user }] }),
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -53,5 +72,5 @@ window.LiveAPI = (function () {
     throw lastErr;
   }
 
-  return { complete, MODEL };
+  return { complete, MODELS, getModel, setModel, hasKey };
 })();
