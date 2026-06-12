@@ -641,7 +641,7 @@ function QDetail({ db, q }) {
         <div style={{ ...eMono, fontSize: 10, letterSpacing: "0.1em", color: "var(--med)", marginBottom: 5 }}>
           체크포인트 · {q.id} · {catLabel}
         </div>
-        <div style={{ fontSize: 11.5, color: "var(--dim)", lineHeight: 1.5, fontStyle: "italic" }}>{q.text}</div>
+        <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>{q.text}</div>
       </div>
       {/* 마커 + mode 칩 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
