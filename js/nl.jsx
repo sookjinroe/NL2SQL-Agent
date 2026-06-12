@@ -24,6 +24,31 @@ const NL_MARKER_TIP = {
   "폴백": "Term 링크 없음 — search_columns(Description 검색) 폴백만으로 접근 가능, 신뢰도 한정 필수",
   "조인": "FK 경로를 타야 풀리는 문항 — 경로와 grain 처리를 함께 검증",
 };
+function NLMarkerChip({ m }) {
+  const [show, setShow] = nUseState(false);
+  const tip = NL_MARKER_TIP[m.split(":")[0]] || null;
+  const color = NL_MARKER_COLOR[m.split(":")[0]] || "var(--dim)";
+  return (
+    <span style={{ position: "relative", display: "inline-block", flexShrink: 0 }}
+      onMouseEnter={() => tip && setShow(true)} onMouseLeave={() => setShow(false)}>
+      <span style={{ ...mono, fontSize: 9, color,
+        border: `1px solid ${color}55`, borderRadius: 3, padding: "0px 4px" }}>{m}</span>
+      {show && tip && (
+        <span style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%",
+                       transform: "translateX(-50%)", zIndex: 100,
+                       background: "#13161b", border: "1px solid var(--border)",
+                       borderRadius: 5, padding: "7px 11px", width: 260,
+                       boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                       pointerEvents: "none", whiteSpace: "normal" }}>
+          <span style={{ ...mono, fontSize: 10, color, display: "block", marginBottom: 3 }}>{m}</span>
+          <span style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.6 }}>{tip}</span>
+          <span style={{ position: "absolute", bottom: -5, left: "50%",
+                         width: 8, height: 8, background: "#13161b",
+                         border: "1px solid var(--border)", borderTop: "none", borderLeft: "none",
+                         transform: "translateX(-50%) rotate(45deg)" }} />
+        </span>)}
+    </span>);
+}
 
 function NLScreen() {
   const [ready, setReady] = nUseState(null);     // null=로딩, 'ok', 'err:...'
@@ -172,10 +197,7 @@ function NLScreen() {
                     <span style={{ ...mono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
                     <span style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
                     {((q.checkpoint||{}).markers||[]).map((m) => (
-                      <span key={m} title={NL_MARKER_TIP[m.split(":")[0]]||""}
-                        style={{ ...mono, fontSize: 9, color: NL_MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
-                        border: `1px solid ${NL_MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}55`,
-                        borderRadius: 3, padding: "0px 4px", flexShrink: 0, cursor: "help" }}>{m}</span>))}
+                      <NLMarkerChip key={m} m={m} />))}
                   </div>
                   {v && v.flags.length > 0 && (
                     <div style={{ ...mono, fontSize: 9, color: "var(--low)", paddingLeft: 14, marginTop: 2 }}>{v.flags.join(" · ")}</div>)}

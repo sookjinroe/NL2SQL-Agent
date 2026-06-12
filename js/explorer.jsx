@@ -560,10 +560,7 @@ function QuestionView({ db, Q, route, nav }) {
             <span style={{ ...eMono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
             <span style={{ fontSize: 11.5, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
             {(q.checkpoint && q.checkpoint.markers || []).map((m) => (
-              <span key={m} title={MARKER_TIP[m.split(":")[0]]||""}
-                style={{ ...eMono, fontSize: 9, color: MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
-                border: `1px solid ${MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}55`,
-                borderRadius: 3, padding: "0px 5px", flexShrink: 0, cursor: "help" }}>{m}</span>))}
+              <MarkerChip key={m} m={m} small={true} />))}
           </div>
         </div>))}
     </div>));
@@ -599,6 +596,38 @@ const MARKER_TIP = {
   "조인": "FK 경로를 타야 풀리는 문항 — 경로와 grain 처리를 함께 검증",
 };
 
+// 커스텀 툴팁 — 앱 토큰 스타일, 마커 위에 말풍선
+function MarkerChip({ m, small }) {
+  const [show, setShow] = eUseState(false);
+  const ref = eUseRef(null);
+  const tip = MARKER_TIP[m.split(":")[0]] || null;
+  const color = MARKER_COLOR[m.split(":")[0]] || "var(--dim)";
+  return (
+    <span ref={ref} style={{ position: "relative", display: "inline-block", flexShrink: 0 }}
+      onMouseEnter={() => tip && setShow(true)} onMouseLeave={() => setShow(false)}>
+      <span style={{ ...eMono, fontSize: small ? 9 : 11, color,
+        border: `1px solid ${color}66`, borderRadius: small ? 3 : 4,
+        padding: small ? "0px 4px" : "2px 8px",
+        cursor: tip ? "default" : "default",
+        display: "inline-block", marginRight: small ? 0 : 6, marginBottom: small ? 0 : 4 }}>{m}</span>
+      {show && tip && (
+        <span style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%",
+                       transform: "translateX(-50%)", zIndex: 100,
+                       background: "var(--panel)", border: "1px solid var(--border)",
+                       borderRadius: 5, padding: "7px 11px", width: 260,
+                       boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                       pointerEvents: "none", whiteSpace: "normal" }}>
+          <span style={{ ...eMono, fontSize: 10, color, display: "block", marginBottom: 3 }}>{m}</span>
+          <span style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.6 }}>{tip}</span>
+          {/* 말풍선 꼬리 */}
+          <span style={{ position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)",
+                         width: 8, height: 8, background: "var(--panel)",
+                         border: "1px solid var(--border)", borderTop: "none", borderLeft: "none",
+                         transform: "translateX(-50%) rotate(45deg)" }} />
+        </span>)}
+    </span>);
+}
+
 function QDetail({ db, q }) {
   const MODE = { sql: ["단일 골든", "var(--high)"], clarify: ["모호 — D8 3단 채점", "var(--med)"], missing: ["의도된 결손", "var(--low)"] };
   const cp = q.checkpoint || {};
@@ -617,10 +646,7 @@ function QDetail({ db, q }) {
       {/* 마커 + mode 칩 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
         <Chip color={MODE[q.mode][1]}>{MODE[q.mode][0]}</Chip>
-        {markers.map((m) => <span key={m} title={MARKER_TIP[m.split(":")[0]]||""}
-          style={{ ...eMono, fontSize: 11, color: MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
-            border: `1px solid ${MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}66`, borderRadius: 4,
-            padding: "2px 9px", marginRight: 6, marginBottom: 5, display: "inline-block", cursor: "help" }}>{m}</span>)}
+        {markers.map((m) => <MarkerChip key={m} m={m} small={false} />)}
       </div>
       {/* 체크포인트 내용 — 헤더 레이블 없이 바로 행 */}
       {(cp.must || cp.watch || cp.trap) && (
