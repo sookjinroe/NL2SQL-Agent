@@ -305,45 +305,73 @@ function FkGraph({ name, out, inn, nav }) {
 }
 
 // ============ ② Term 뷰 (의미) ============
+// TermView: 3단 — 도메인 네비(좌 88px) / Term 목록(중 200px) / Term 상세(우 나머지)
+const TERM_DOMS = ["CUSTOMER","LOAN","CARD","DEPOSIT","RISK","_DISTRACTOR"];
 function TermView({ L, idx, route, nav }) {
-  const [filter, setFilter] = eUseState("");
   const sel = route.sel || "대출연체";
-  const doms = ["CUSTOMER", "LOAN", "CARD", "DEPOSIT", "RISK"];
+  const initDom = () => { const t = idx.termByName[sel]; return (t && (t.links||[]).length) ? (t.domain||"CUSTOMER") : "_DISTRACTOR"; };
+  const [activeDom, setActiveDom] = eUseState(initDom);
+  const [filter, setFilter] = eUseState("");
   const nf = window.ExplorerLib.norm(filter);
-  const match = (t) => !nf || [t.name, ...(t.synonyms || [])].some((k) => window.ExplorerLib.norm(k).includes(nf));
-  const linked = L.terms.filter((t) => (t.links || []).length && match(t));
-  const orphan = L.terms.filter((t) => !(t.links || []).length && match(t));
-  const left = (
-    <div>
-      <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Term·동의어 필터"
-        style={{ ...eMono, fontSize: 11.5, width: "100%", background: "rgba(0,0,0,0.3)", color: "var(--text)",
-                 border: "1px solid var(--border)", borderRadius: 4, padding: "5px 9px", marginBottom: 10 }} />
-      {doms.map((d) => {
-        const ts = linked.filter((t) => t.domain === d);
-        if (!ts.length) return null;
+  const match = (t) => !nf || [t.name,...(t.synonyms||[])].some((k)=>window.ExplorerLib.norm(k).includes(nf));
+  eUseEffect(() => {
+    const t = idx.termByName[sel];
+    if (t) setActiveDom((t.links&&t.links.length) ? (t.domain||"CUSTOMER") : "_DISTRACTOR");
+  }, [sel]);
+  const domCounts = {};
+  for (const d of ["CUSTOMER","LOAN","CARD","DEPOSIT","RISK"])
+    domCounts[d] = L.terms.filter((t)=>t.domain===d&&(t.links||[]).length).length;
+  domCounts["_DISTRACTOR"] = L.terms.filter((t)=>!(t.links||[]).length).length;
+  const listTerms = activeDom === "_DISTRACTOR"
+    ? L.terms.filter((t)=>!(t.links||[]).length&&match(t))
+    : L.terms.filter((t)=>t.domain===activeDom&&(t.links||[]).length&&match(t));
+  const domNav = (
+    <div style={{width:88,borderRight:"1px solid var(--border)",padding:"14px 6px",overflowY:"auto",flexShrink:0}}>
+      <div style={{...eMono,fontSize:9.5,letterSpacing:"0.1em",color:"var(--dim)",marginBottom:10,paddingLeft:8}}>DOMAIN</div>
+      {TERM_DOMS.map((d)=>{
+        const label = d==="_DISTRACTOR"?"DIST.":d.slice(0,4)+(d.length>4?"…":"");
+        const color = d==="_DISTRACTOR"?"var(--dim)":DOM_COLOR[d];
+        const active = activeDom===d;
         return (
-          <div key={d} style={{ marginBottom: 11 }}>
-            <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: DOM_COLOR[d], marginBottom: 4 }}>{d}</div>
-            {ts.map((t) => (
-              <div key={t.name} onClick={() => nav("term", t.name)}
-                style={{ display: "flex", gap: 7, alignItems: "baseline", padding: "3px 8px", borderRadius: 4, cursor: "pointer",
-                         background: sel === t.name ? "rgba(255,255,255,0.06)" : "transparent" }}>
-                <span style={{ fontSize: 12.5, color: "var(--text)" }}>{t.name}</span>
-                {t.family && <span style={{ ...eMono, fontSize: 9, color: "var(--med)" }}>{t.family.split("_")[0]}</span>}
-                <span style={{ flex: 1 }} />
-                <span style={{ ...eMono, fontSize: 9.5, color: "var(--dim)" }}>{(t.links || []).length}links</span>
-              </div>))}
+          <div key={d} onClick={()=>{setActiveDom(d);setFilter("");}}
+            style={{padding:"6px 8px",borderRadius:4,cursor:"pointer",marginBottom:2,
+                    background:active?"rgba(255,255,255,0.07)":"transparent",
+                    borderLeft:active?`2px solid ${color}`:"2px solid transparent"}}>
+            <div style={{...eMono,fontSize:10.5,color:active?color:"var(--dim)",fontWeight:active?600:400}}>{label}</div>
+            <div style={{...eMono,fontSize:9.5,color:"var(--dim)"}}>{domCounts[d]}</div>
           </div>);
       })}
-      <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: "var(--dim)", margin: "14px 0 4px" }}>
-        미연결 (DISTRACTOR · {orphan.length})
-      </div>
-      {orphan.map((t) => (
-        <div key={t.name} onClick={() => nav("term", t.name)}
-          style={{ padding: "2.5px 8px", borderRadius: 4, cursor: "pointer", fontSize: 12, color: "var(--dim)",
-                   background: sel === t.name ? "rgba(255,255,255,0.06)" : "transparent" }}>{t.name}</div>))}
     </div>);
-  return <TwoPane left={left} right={<TermDetail L={L} idx={idx} name={sel} nav={nav} />} />;
+  const termList = (
+    <div style={{width:210,borderRight:"1px solid var(--border)",padding:"14px 8px",overflowY:"auto",flexShrink:0}}>
+      <input value={filter} onChange={(e)=>setFilter(e.target.value)} placeholder="필터"
+        style={{...eMono,fontSize:11,width:"100%",background:"rgba(0,0,0,0.3)",color:"var(--text)",
+                border:"1px solid var(--border)",borderRadius:4,padding:"4px 8px",marginBottom:8}} />
+      {listTerms.length===0&&<div style={{...eMono,fontSize:11,color:"var(--dim)",padding:"4px 6px"}}>(없음)</div>}
+      {listTerms.map((t)=>{
+        const active = sel===t.name;
+        const hasCol = (t.synonyms||[]).some((s)=>(idx.surfaceCount[s]||1)>=2);
+        return (
+          <div key={t.name} onClick={()=>nav("term",t.name)}
+            style={{padding:"5px 7px",borderRadius:4,cursor:"pointer",marginBottom:1,
+                    background:active?"rgba(255,255,255,0.07)":"transparent",
+                    borderLeft:active?"2px solid var(--accent)":"2px solid transparent"}}>
+            <div style={{display:"flex",alignItems:"center",gap:5}}>
+              <span style={{fontSize:12.5,color:active?"var(--text)":"var(--muted)",flex:1,lineHeight:1.4}}>{t.name}</span>
+              {hasCol&&<span style={{...eMono,fontSize:9,color:"var(--low)"}}>⚠</span>}
+              {t.family&&<span style={{...eMono,fontSize:8.5,color:"var(--med)"}}>{t.family.split("_")[0]}</span>}
+            </div>
+            <div style={{...eMono,fontSize:9.5,color:"var(--dim)"}}>{(t.links||[]).length} links</div>
+          </div>);
+      })}
+    </div>);
+  return (
+    <div style={{display:"flex",minHeight:"calc(100vh - 96px)"}}>
+      {domNav}{termList}
+      <div style={{flex:1,padding:"18px 26px",overflowY:"auto"}}>
+        <TermDetail L={L} idx={idx} name={sel} nav={nav} />
+      </div>
+    </div>);
 }
 
 function TermDetail({ L, idx, name, nav }) {
@@ -439,27 +467,64 @@ function MetricView({ L, idx, route, nav }) {
 // ============ ④ 충돌 지도 ============
 function CollisionView({ idx, route, nav }) {
   const sel = route.sel;
+  const FAM_CLASH = {
+    "F1_grade": ["신용등급·고객등급·카드등급", "이름은 같은 '등급'이지만 코드체계·척도·도메인이 전부 다르다"],
+    "F2_status": ["신청상태·계좌상태·카드상태·수신계좌상태", "'대출상태'라는 말이 신청 처리 단계와 계좌 생애주기 둘 다에 쓰임 — ACCT_STAT_CD가 두 테이블에 동명으로 존재"],
+    "F3_repayment": ["대출상환방식 vs 카드결제방식", "'상환방식'이 두 도메인에 걸림 — 코드체계 완전히 다름 (원리금균등 vs 일시불·리볼빙)"],
+    "F4_limit": ["여신한도(RISK) vs 카드이용한도(CARD)", "'한도' 하나가 총 신용 공여 한도와 월간 카드 사용 한도 두 개념에 대응"],
+    "F5_dlnq": ["대출연체(LOAN) vs 카드연체(CARD)", "'연체'와 '연체율'이 두 도메인에 걸림 — 정본 메트릭도 각각 따로 정의됨"],
+    "F6_balance": ["대출잔액(미상환 원금) vs 예금잔액(수신 계좌 잔액)", "'잔액·잔고'가 부채와 자산 양쪽에 걸림 — 전체 잔액 총계 질문 시 반드시 도메인 확인 필요"],
+    "F7_maturity": ["대출만기(LOAN_EXP_DT) vs 예금만기(MTRT_DT)", "'만기' 하나로 대출 계약 종료와 예금 만기 모두 지칭"],
+  };
   return (
-    <div style={{ padding: "18px 26px", maxWidth: 1020 }}>
-      <Section title="충돌 패밀리 — 설계된 도메인 간 충돌 7군 (Term 클릭 → Term 뷰)">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
-          {Object.entries(idx.families).map(([f, terms]) => (
-            <div key={f} style={{ border: `1px solid ${sel === f ? "var(--med)" : "var(--border)"}`, borderRadius: 6, padding: "10px 13px" }}>
-              <div style={{ ...eMono, fontSize: 11.5, color: "var(--med)", marginBottom: 7 }}>{FAM_LABEL[f] || f}</div>
-              {terms.map((tn) => <Chip key={tn} color="var(--text)" onClick={() => nav("term", tn)}>{tn}</Chip>)}
-            </div>))}
+    <div style={{ padding: "18px 26px", maxWidth: 1040 }}>
+      <div style={{ border: "1px solid var(--border)", borderRadius: 7, padding: "14px 18px", marginBottom: 24,
+                    borderLeft: "3px solid var(--low)" }}>
+        <div style={{ ...eMono, fontSize: 12, color: "var(--low)", marginBottom: 8 }}>충돌 지도란?</div>
+        <div style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.75 }}>
+          이 코퍼스는 같은 말이 여러 도메인·입도의 개념에 걸리는 상황을 의도적으로 설계했다.
+          예를 들어 "연체율이 어떻게 돼?"라는 질문에 대출연체율(8.5%)과 카드연체율(4.1%) 중 어느 쪽인지는 질문만으로 결정되지 않는다.
+          에이전트가 조용히 한쪽을 고르면 — 맞든 틀리든 — 사용자는 그 가정을 확인할 방법이 없다.
+        </div>
+        <div style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.75, marginTop: 8 }}>
+          충돌 지도는 이 설계의 전체 구조를 보여준다.
+          <b style={{ color: "var(--text)", fontWeight: 500 }}> 패밀리</b>는 같은 추상 개념(등급·상태·잔액 등)이 도메인별로 실현된 묶음이고,
+          <b style={{ color: "var(--text)", fontWeight: 500 }}> 동의어 충돌 표</b>는 같은 표면형(단어)이 실제로 어느 Term들에 닿는지를 보여준다.
+          <span style={{ ...eMono, fontSize: 11.5, color: "var(--low)", marginLeft: 6 }}>⚠</span> 표시가 있는 말은 에이전트가 반드시 확인 질문을 해야 한다(D8 채점 정책).
+        </div>
+      </div>
+      <Section title="충돌 패밀리 — 7군 · 각 군의 충돌 어휘와 이유 (Term 클릭 → Term 뷰)">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+          {Object.entries(idx.families).map(([f, terms]) => {
+            const clash = FAM_CLASH[f] || ["", ""];
+            return (
+              <div key={f} style={{ border: `1px solid ${sel===f?"var(--med)":"var(--border)"}`, borderRadius: 6, padding: "11px 14px" }}>
+                <div style={{ ...eMono, fontSize: 12, color: "var(--med)", marginBottom: 5 }}>{FAM_LABEL[f]||f}</div>
+                <div style={{ fontSize: 11.5, color: "var(--low)", marginBottom: 4 }}>충돌 어휘: {clash[0]}</div>
+                <div style={{ fontSize: 11.5, color: "var(--dim)", marginBottom: 9, lineHeight: 1.55 }}>{clash[1]}</div>
+                <div style={{ display: "flex", flexWrap: "wrap" }}>
+                  {terms.map((tn) => <Chip key={tn} color="var(--text)" onClick={() => nav("term", tn)}>{tn}</Chip>)}
+                </div>
+              </div>);
+          })}
         </div>
       </Section>
-      <Section title={`동의어 충돌 지도 — 같은 말이 2개 이상 Term에 닿는 표면형 ${idx.collisions.length}개 (모호성의 물리적 실체)`}>
+      <Section title={`동의어 충돌 표 — 같은 말이 2개 이상 Term에 닿는 표면형 ${idx.collisions.length}개`}>
+        <div style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12, lineHeight: 1.6 }}>
+          아래 표의 각 행은 하나의 표현(단어·동의어)이 복수의 Term에 걸리는 경우다.
+          에이전트가 이 표현이 포함된 질문을 받으면 resolve_terms가 복수 후보를 반환하고,
+          에이전트는 어느 Term인지 확인 질문을 해야 한다. 확인 없이 답하면 D8 오답 처리된다.
+        </div>
         {idx.collisions.map((c) => (
-          <div key={c.word} style={{ display: "flex", gap: 12, alignItems: "baseline", padding: "7px 12px", borderRadius: 5,
-                                     border: `1px solid ${sel === c.word ? "var(--low)" : "rgba(255,255,255,0.05)"}`, marginBottom: 6 }}>
-            <span style={{ ...eMono, fontSize: 13, color: "var(--low)", width: 110, flexShrink: 0 }}>"{c.word}"</span>
-            <div>
+          <div key={c.word} style={{ display: "flex", gap: 12, alignItems: "center", padding: "7px 12px", borderRadius: 5,
+                                     border: `1px solid ${sel===c.word?"var(--low)":"rgba(255,255,255,0.05)"}`, marginBottom: 6 }}>
+            <span style={{ ...eMono, fontSize: 13, color: "var(--low)", width: 112, flexShrink: 0 }}>"{c.word}"</span>
+            <span style={{ ...eMono, fontSize: 10, color: "var(--dim)", width: 30, flexShrink: 0 }}>→</span>
+            <div style={{ display: "flex", flexWrap: "wrap" }}>
               {c.terms.map((tn) => {
                 const t = idx.termByName[tn];
                 return <Chip key={tn} color="var(--text)" onClick={() => nav("term", tn)}>
-                  {tn} <span style={{ color: DOM_COLOR[t.domain] || "var(--dim)" }}>·{t.domain || "공통"}</span></Chip>;
+                  {tn} <span style={{ color: DOM_COLOR[t.domain]||"var(--dim)" }}>·{t.domain||"공통"}</span></Chip>;
               })}
             </div>
           </div>))}
