@@ -556,17 +556,14 @@ function QuestionView({ db, Q, route, nav }) {
           style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer",
                    background: sel === q.id ? "rgba(255,255,255,0.06)" : "transparent",
                    borderLeft: sel === q.id ? "2px solid var(--accent)" : "2px solid transparent" }}>
-          <div style={{ display: "flex", gap: 7, alignItems: "baseline" }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}>
             <span style={{ ...eMono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
             <span style={{ fontSize: 11.5, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
+            {(q.checkpoint && q.checkpoint.markers || []).map((m) => (
+              <span key={m} style={{ ...eMono, fontSize: 9, color: MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
+                border: `1px solid ${MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}55`,
+                borderRadius: 3, padding: "0px 5px", flexShrink: 0 }}>{m}</span>))}
           </div>
-          {(q.checkpoint && q.checkpoint.markers && q.checkpoint.markers.length > 0) && (
-            <div style={{ display: "flex", gap: 4, marginTop: 3, paddingLeft: 30 }}>
-              {q.checkpoint.markers.map((m) => (
-                <span key={m} style={{ ...eMono, fontSize: 9, color: MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
-                  border: `1px solid ${MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}55`,
-                  borderRadius: 3, padding: "0px 5px" }}>{m}</span>))}
-            </div>)}
         </div>))}
     </div>));
   const q = Q.find((x) => x.id === sel) || Q[0];
@@ -597,36 +594,43 @@ function QDetail({ db, q }) {
   const MODE = { sql: ["단일 골든", "var(--high)"], clarify: ["모호 — D8 3단 채점", "var(--med)"], missing: ["의도된 결손", "var(--low)"] };
   const cp = q.checkpoint || {};
   const markers = cp.markers || [];
+  const ECAT_LOCAL = typeof ECAT !== "undefined" ? ECAT : {};
+  const catLabel = (ECAT_LOCAL[q.cat] || {}).label || q.cat;
   return (
-    <div style={{ maxWidth: 880 }}>
-      <div style={{ ...eMono, fontSize: 11, color: "var(--muted)" }}>{q.id} · {ECAT[q.cat].label}</div>
-      <div style={{ fontSize: 16.5, fontWeight: 600, margin: "6px 0 8px" }}>{q.text}</div>
-      <div style={{ marginBottom: markers.length ? 12 : 4 }}>
+    <div>
+      {/* 패널 헤더 — "체크포인트" 레이블 + 질문을 아주 작게 */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ ...eMono, fontSize: 10, letterSpacing: "0.1em", color: "var(--med)", marginBottom: 5 }}>
+          체크포인트 · {q.id} · {catLabel}
+        </div>
+        <div style={{ fontSize: 11.5, color: "var(--dim)", lineHeight: 1.5, fontStyle: "italic" }}>{q.text}</div>
+      </div>
+      {/* 마커 + mode 칩 */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
         <Chip color={MODE[q.mode][1]}>{MODE[q.mode][0]}</Chip>
         {markers.map((m) => <Chip key={m} color={MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}>{m}</Chip>)}
-        {(q.tags || []).map((t) => <Chip key={t} color="var(--dim)">{t}</Chip>)}
       </div>
+      {/* 체크포인트 내용 — 헤더 레이블 없이 바로 행 */}
       {(cp.must || cp.watch || cp.trap) && (
         <div style={{ border: "1px solid var(--border)", borderLeft: "3px solid var(--med)", borderRadius: 5,
-                      padding: "12px 16px", marginBottom: 16, background: "rgba(0,0,0,0.18)" }}>
-          <div style={{ ...eMono, fontSize: 10.5, letterSpacing: "0.08em", color: "var(--med)", marginBottom: 9 }}>체크포인트</div>
+                      padding: "12px 14px", marginBottom: 16, background: "rgba(0,0,0,0.18)" }}>
           {cp.must && (
             <div style={{ display: "flex", gap: 10, marginBottom: 7 }}>
-              <span style={{ ...eMono, fontSize: 10.5, color: "var(--high)", flexShrink: 0, width: 110 }}>해야 할 것</span>
-              <span style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>{cp.must}</span>
+              <span style={{ ...eMono, fontSize: 10.5, color: "var(--high)", flexShrink: 0, width: 100 }}>해야 할 것</span>
+              <span style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.6 }}>{cp.must}</span>
             </div>)}
           {cp.watch && (
             <div style={{ display: "flex", gap: 10, marginBottom: 7 }}>
-              <span style={{ ...eMono, fontSize: 10.5, color: "var(--sig)", flexShrink: 0, width: 110 }}>트레이스에서</span>
-              <span style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>{cp.watch}</span>
+              <span style={{ ...eMono, fontSize: 10.5, color: "var(--sig)", flexShrink: 0, width: 100 }}>트레이스에서</span>
+              <span style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.6 }}>{cp.watch}</span>
             </div>)}
           {cp.trap && (
             <div style={{ display: "flex", gap: 10 }}>
-              <span style={{ ...eMono, fontSize: 10.5, color: "var(--low)", flexShrink: 0, width: 110 }}>함정·주의</span>
-              <span style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6 }}>{cp.trap}</span>
+              <span style={{ ...eMono, fontSize: 10.5, color: "var(--low)", flexShrink: 0, width: 100 }}>함정·주의</span>
+              <span style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.6 }}>{cp.trap}</span>
             </div>)}
         </div>)}
-      <Section title="기대 조회 행동 (expected_ops — 적절성 채점의 골든)">
+      <Section title="기대 조회 행동 (expected_ops)">
         {(q.expected_ops || []).map((o) => <Chip key={o} color="var(--sig)">{o}</Chip>)}
       </Section>
       {q.mode === "sql" && (
@@ -640,10 +644,10 @@ function QDetail({ db, q }) {
         </Section>)}
       {q.mode === "missing" && (
         <Section title="기대 행동">
-          <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.65, marginBottom: 10 }}>{q.golden.expected_behavior}</div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.65, marginBottom: 10 }}>{q.golden.expected_behavior}</div>
           {q.golden.world_truth && (
             <RunnableSql db={db} sql={q.golden.world_truth.sql}
-              label="세계 진실 (평가 전용 — 레이어 밖 정보, 에이전트에게는 비공개)" />)}
+              label="세계 진실 (평가 전용 — 에이전트 비공개)" />)}
         </Section>)}
     </div>
   );

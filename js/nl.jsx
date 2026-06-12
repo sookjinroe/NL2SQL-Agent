@@ -158,15 +158,15 @@ function NLScreen() {
                   style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer",
                            background: active === q.id ? "rgba(255,255,255,0.05)" : "transparent",
                            borderLeft: active === q.id ? "2px solid var(--accent)" : "2px solid transparent" }}>
-                  <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
-                    <span style={{ width: 7, height: 7, borderRadius: 7, flexShrink: 0,
+                  <div style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 7, flexShrink: 0, alignSelf: "center",
                                    background: v ? VCOLOR[v.verdict] : (r && r.status === "running" ? "var(--sig)" : "var(--border)") }} />
+                    <span style={{ ...mono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
+                    <span style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
                     {((q.checkpoint||{}).markers||[]).map((m) => (
                       <span key={m} style={{ ...mono, fontSize: 9, color: NL_MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
                         border: `1px solid ${NL_MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}55`,
                         borderRadius: 3, padding: "0px 4px", flexShrink: 0 }}>{m}</span>))}
-                    <span style={{ ...mono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
-                    <span style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
                   </div>
                   {v && v.flags.length > 0 && (
                     <div style={{ ...mono, fontSize: 9, color: "var(--low)", paddingLeft: 14, marginTop: 2 }}>{v.flags.join(" · ")}</div>)}
