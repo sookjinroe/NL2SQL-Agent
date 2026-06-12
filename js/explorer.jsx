@@ -650,3 +650,5 @@ function QDetail({ db, q }) {
 }
 
 window.ExplorerScreen = ExplorerScreen;
+window.QDetail = QDetail;
+window.RunnableSql = RunnableSql;

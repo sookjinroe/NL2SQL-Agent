@@ -14,6 +14,8 @@ const VLABEL = { correct: "정답", partial: "부분", wrong: "오답" };
 const CATL = { normal: "정상 경로", family: "충돌 패밀리", granularity: "입도", boundary: "경계 결손", join: "조인" };
 const mono = { fontFamily: "var(--mono)" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const NL_MARKER_COLOR = { "함정":"var(--low)", "경계":"var(--med)", "D8":"var(--sig)",
+  "오류":"var(--lin)", "폴백":"var(--accent)", "조인":"var(--high)", "대표":"var(--dim)" };
 
 function NLScreen() {
   const [ready, setReady] = nUseState(null);     // null=로딩, 'ok', 'err:...'
@@ -153,13 +155,21 @@ function NLScreen() {
               const r = results[q.id]; const v = r && r.verdict;
               return (
                 <div key={q.id} onClick={() => !busy && (r && r.events ? setActive(q.id) : runOne(q, true))}
-                  style={{ display: "flex", gap: 8, alignItems: "baseline", padding: "5px 8px", borderRadius: 4,
-                           cursor: "pointer", background: active === q.id ? "rgba(255,255,255,0.05)" : "transparent" }}>
-                  <span style={{ width: 7, height: 7, borderRadius: 7, flexShrink: 0, alignSelf: "center",
-                                 background: v ? VCOLOR[v.verdict] : (r && r.status === "running" ? "var(--sig)" : "var(--border)") }} />
-                  <span style={{ ...mono, fontSize: 10.5, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
-                  <span style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.45 }}>{q.text}</span>
-                  {v && v.flags.length > 0 && <span style={{ ...mono, fontSize: 9.5, color: "var(--low)" }}>{v.flags.join(",")}</span>}
+                  style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer",
+                           background: active === q.id ? "rgba(255,255,255,0.05)" : "transparent",
+                           borderLeft: active === q.id ? "2px solid var(--accent)" : "2px solid transparent" }}>
+                  <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 7, flexShrink: 0,
+                                   background: v ? VCOLOR[v.verdict] : (r && r.status === "running" ? "var(--sig)" : "var(--border)") }} />
+                    {((q.checkpoint||{}).markers||[]).map((m) => (
+                      <span key={m} style={{ ...mono, fontSize: 9, color: NL_MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
+                        border: `1px solid ${NL_MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}55`,
+                        borderRadius: 3, padding: "0px 4px", flexShrink: 0 }}>{m}</span>))}
+                    <span style={{ ...mono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
+                    <span style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
+                  </div>
+                  {v && v.flags.length > 0 && (
+                    <div style={{ ...mono, fontSize: 9, color: "var(--low)", paddingLeft: 14, marginTop: 2 }}>{v.flags.join(" · ")}</div>)}
                 </div>
               );
             })}
@@ -167,10 +177,16 @@ function NLScreen() {
         ))}
       </div>
 
-      {/* ---- 우: 활성 질문의 추론 스레드 ---- */}
-      <div style={{ padding: "20px 26px", overflowY: "auto" }}>
-        {!active && <Center>질문을 클릭하면 단건 실행(라이브), 전체 실행은 좌측 버튼.</Center>}
-        {active && <Thread q={Q.find((x) => x.id === active)} r={results[active]} />}
+      {/* ---- 우: 트레이스(60%) + 질문 상세(40%) ---- */}
+      <div style={{ display: "flex", overflow: "hidden" }}>
+        <div style={{ flex: "0 0 60%", padding: "20px 24px", overflowY: "auto", borderRight: "1px solid var(--border)" }}>
+          {!active && <Center>질문을 클릭하면 단건 실행(라이브), 전체 실행은 좌측 버튼.</Center>}
+          {active && <Thread q={Q.find((x) => x.id === active)} r={results[active]} />}
+        </div>
+        <div style={{ flex: "0 0 40%", padding: "20px 22px", overflowY: "auto", background: "rgba(0,0,0,0.12)" }}>
+          {!active && <Center style={{ fontSize: 12.5 }}>질문을 선택하면 상세 정보가 표시됩니다.</Center>}
+          {active && window.QDetail && <window.QDetail db={dbRef.current} q={Q.find((x) => x.id === active)} />}
+        </div>
       </div>
     </div>
   );
