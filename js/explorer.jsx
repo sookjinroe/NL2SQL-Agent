@@ -560,9 +560,10 @@ function QuestionView({ db, Q, route, nav }) {
             <span style={{ ...eMono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
             <span style={{ fontSize: 11.5, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
             {(q.checkpoint && q.checkpoint.markers || []).map((m) => (
-              <span key={m} style={{ ...eMono, fontSize: 9, color: MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
+              <span key={m} title={MARKER_TIP[m.split(":")[0]]||""}
+                style={{ ...eMono, fontSize: 9, color: MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
                 border: `1px solid ${MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}55`,
-                borderRadius: 3, padding: "0px 5px", flexShrink: 0 }}>{m}</span>))}
+                borderRadius: 3, padding: "0px 5px", flexShrink: 0, cursor: "help" }}>{m}</span>))}
           </div>
         </div>))}
     </div>));
@@ -589,6 +590,14 @@ function RunnableSql({ db, sql, label }) {
 
 const MARKER_COLOR = { "함정":"var(--low)", "경계":"var(--med)", "D8":"var(--sig)",
   "오류":"var(--lin)", "폴백":"var(--accent)", "조인":"var(--high)", "대표":"var(--dim)" };
+const MARKER_TIP = {
+  "함정": "정본 지표(get_metric)를 쓰지 않으면 숫자가 달라지게 설계된 문항 — 소박한 재계산은 오답",
+  "D8":   "질문이 도메인·입도를 특정하지 않음 — 확인 질문 없이 한쪽을 고르면 값이 맞아도 오답",
+  "경계": "레이어에 일부러 빠뜨린 정보 앞에서의 행동을 검증 — 지어내면 환각 플래그",
+  "오류": "1차 실측에서 에이전트가 실제로 틀린 문항 — 역량 측정 항목으로 보존",
+  "폴백": "Term 링크 없음 — search_columns(Description 검색) 폴백만으로 접근 가능, 신뢰도 한정 필수",
+  "조인": "FK 경로를 타야 풀리는 문항 — 경로와 grain 처리를 함께 검증",
+};
 
 function QDetail({ db, q }) {
   const MODE = { sql: ["단일 골든", "var(--high)"], clarify: ["모호 — D8 3단 채점", "var(--med)"], missing: ["의도된 결손", "var(--low)"] };
@@ -608,7 +617,10 @@ function QDetail({ db, q }) {
       {/* 마커 + mode 칩 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
         <Chip color={MODE[q.mode][1]}>{MODE[q.mode][0]}</Chip>
-        {markers.map((m) => <Chip key={m} color={MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}>{m}</Chip>)}
+        {markers.map((m) => <span key={m} title={MARKER_TIP[m.split(":")[0]]||""}
+          style={{ ...eMono, fontSize: 11, color: MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
+            border: `1px solid ${MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}66`, borderRadius: 4,
+            padding: "2px 9px", marginRight: 6, marginBottom: 5, display: "inline-block", cursor: "help" }}>{m}</span>)}
       </div>
       {/* 체크포인트 내용 — 헤더 레이블 없이 바로 행 */}
       {(cp.must || cp.watch || cp.trap) && (

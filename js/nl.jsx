@@ -16,6 +16,14 @@ const mono = { fontFamily: "var(--mono)" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const NL_MARKER_COLOR = { "함정":"var(--low)", "경계":"var(--med)", "D8":"var(--sig)",
   "오류":"var(--lin)", "폴백":"var(--accent)", "조인":"var(--high)", "대표":"var(--dim)" };
+const NL_MARKER_TIP = {
+  "함정": "정본 지표(get_metric)를 쓰지 않으면 숫자가 달라지게 설계된 문항 — 소박한 재계산은 오답",
+  "D8":   "질문이 도메인·입도를 특정하지 않음 — 확인 질문 없이 한쪽을 고르면 값이 맞아도 오답",
+  "경계": "레이어에 일부러 빠뜨린 정보 앞에서의 행동을 검증 — 지어내면 환각 플래그",
+  "오류": "1차 실측에서 에이전트가 실제로 틀린 문항 — 역량 측정 항목으로 보존",
+  "폴백": "Term 링크 없음 — search_columns(Description 검색) 폴백만으로 접근 가능, 신뢰도 한정 필수",
+  "조인": "FK 경로를 타야 풀리는 문항 — 경로와 grain 처리를 함께 검증",
+};
 
 function NLScreen() {
   const [ready, setReady] = nUseState(null);     // null=로딩, 'ok', 'err:...'
@@ -164,9 +172,10 @@ function NLScreen() {
                     <span style={{ ...mono, fontSize: 10, color: "var(--dim)", flexShrink: 0 }}>{q.id}</span>
                     <span style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.4 }}>{q.text}</span>
                     {((q.checkpoint||{}).markers||[]).map((m) => (
-                      <span key={m} style={{ ...mono, fontSize: 9, color: NL_MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
+                      <span key={m} title={NL_MARKER_TIP[m.split(":")[0]]||""}
+                        style={{ ...mono, fontSize: 9, color: NL_MARKER_COLOR[m.split(":")[0]]||"var(--dim)",
                         border: `1px solid ${NL_MARKER_COLOR[m.split(":")[0]]||"var(--dim)"}55`,
-                        borderRadius: 3, padding: "0px 4px", flexShrink: 0 }}>{m}</span>))}
+                        borderRadius: 3, padding: "0px 4px", flexShrink: 0, cursor: "help" }}>{m}</span>))}
                   </div>
                   {v && v.flags.length > 0 && (
                     <div style={{ ...mono, fontSize: 9, color: "var(--low)", paddingLeft: 14, marginTop: 2 }}>{v.flags.join(" · ")}</div>)}
