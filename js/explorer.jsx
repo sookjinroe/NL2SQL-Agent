@@ -326,24 +326,26 @@ function TermView({ L, idx, route, nav }) {
     ? L.terms.filter((t)=>!(t.links||[]).length&&match(t))
     : L.terms.filter((t)=>t.domain===activeDom&&(t.links||[]).length&&match(t));
   const domNav = (
-    <div style={{width:88,borderRight:"1px solid var(--border)",padding:"14px 6px",overflowY:"auto",flexShrink:0}}>
-      <div style={{...eMono,fontSize:9.5,letterSpacing:"0.1em",color:"var(--dim)",marginBottom:10,paddingLeft:8}}>DOMAIN</div>
+    <div style={{width:140,borderRight:"1px solid var(--border)",padding:"14px 8px",overflowY:"auto",flexShrink:0}}>
+      <div style={{...eMono,fontSize:9.5,letterSpacing:"0.1em",color:"var(--dim)",marginBottom:10,paddingLeft:10}}>DOMAIN</div>
       {TERM_DOMS.map((d)=>{
-        const label = d==="_DISTRACTOR"?"DIST.":d.slice(0,4)+(d.length>4?"…":"");
+        const label = d==="_DISTRACTOR"?"DISTRACTOR":d;
         const color = d==="_DISTRACTOR"?"var(--dim)":DOM_COLOR[d];
         const active = activeDom===d;
         return (
           <div key={d} onClick={()=>{setActiveDom(d);setFilter("");}}
-            style={{padding:"6px 8px",borderRadius:4,cursor:"pointer",marginBottom:2,
+            style={{padding:"6px 10px",borderRadius:4,cursor:"pointer",marginBottom:2,
                     background:active?"rgba(255,255,255,0.07)":"transparent",
-                    borderLeft:active?`2px solid ${color}`:"2px solid transparent"}}>
-            <div style={{...eMono,fontSize:10.5,color:active?color:"var(--dim)",fontWeight:active?600:400}}>{label}</div>
-            <div style={{...eMono,fontSize:9.5,color:"var(--dim)"}}>{domCounts[d]}</div>
+                    borderLeft:active?`2px solid ${color}`:"2px solid transparent",
+                    display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
+            <span style={{...eMono,fontSize:11,color:active?color:"var(--dim)",fontWeight:active?600:400,
+                          whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{label}</span>
+            <span style={{...eMono,fontSize:9.5,color:"var(--dim)",flexShrink:0}}>{domCounts[d]}</span>
           </div>);
       })}
     </div>);
   const termList = (
-    <div style={{width:210,borderRight:"1px solid var(--border)",padding:"14px 8px",overflowY:"auto",flexShrink:0}}>
+    <div style={{width:240,borderRight:"1px solid var(--border)",padding:"14px 8px",overflowY:"auto",flexShrink:0}}>
       <input value={filter} onChange={(e)=>setFilter(e.target.value)} placeholder="필터"
         style={{...eMono,fontSize:11,width:"100%",background:"rgba(0,0,0,0.3)",color:"var(--text)",
                 border:"1px solid var(--border)",borderRadius:4,padding:"4px 8px",marginBottom:8}} />
