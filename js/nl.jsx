@@ -211,7 +211,7 @@ function NLScreen() {
     <div style={{ display: "grid", gridTemplateColumns: "390px 1fr", gap: 0, minHeight: "100vh" }}>
       {/* ---- 좌: 제어 + 스코어보드 + 질문 목록 ---- */}
       <div style={{ borderRight: "1px solid var(--border)", padding: "18px 16px", overflowY: "auto" }}>
-        <div style={{ ...mono, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>NL Agent · 중규모 검증</div>
+        <div style={{ ...mono, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>NL 에이전트 · 레이어 소비 검증</div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 14 }}>
           충분히 채워진 시맨틱 레이어가 주어졌을 때, 레이어를 소비하는 에이전트의 로직이 중규모에서 성립하는가
         </div>

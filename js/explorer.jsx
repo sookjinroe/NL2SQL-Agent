@@ -20,11 +20,11 @@ const ECAT = {
   boundary:    { label: "경계 결손",   desc: "레이어에 일부러 빠뜨린 정보 — 모르면 모른다고 해야 하고, 지어내면 안 된다" },
   join:        { label: "조인",        desc: "두 테이블을 이어야 풀리는 질문 — 경로와 grain을 함께 검증한다" },
 };
-const VIEWS = [["table", "테이블"], ["term", "Term"], ["metric", "메트릭"], ["collision", "충돌 지도"], ["question", "질문셋"]];
+const VIEWS = [["dashboard", "대시보드"], ["table", "테이블"], ["term", "Term"], ["metric", "메트릭"], ["collision", "충돌 지도"], ["question", "질문셋"]];
 
 function ExplorerScreen() {
   const [ready, setReady] = eUseState(null);
-  const [route, setRoute] = eUseState(() => window.ExplorerLib.parseHash(location.hash) || { v: "table", sel: "LOAN_ACCT_MST" });
+  const [route, setRoute] = eUseState(() => window.ExplorerLib.parseHash(location.hash) || { v: "dashboard", sel: null });
   const [counts, setCounts] = eUseState({});
   const dbRef = eUseRef(null);
   const idxRef = eUseRef(null);
@@ -74,6 +74,7 @@ function ExplorerScreen() {
           {L.tables.length}T · {L.columns.length}C · {totalRows.toLocaleString()}행 · Term {L.terms.length}
         </span>
       </div>
+      {route.v === "dashboard" && <window.DashboardView {...props} />}
       {route.v === "table" && <TableView {...props} />}
       {route.v === "term" && <TermView {...props} />}
       {route.v === "metric" && <MetricView {...props} />}
