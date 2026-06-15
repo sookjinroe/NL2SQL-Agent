@@ -60,6 +60,8 @@ function NLScreen() {
   const [selfCheck, setSelfCheck] = nUseState(null);
   const dbRef = nUseRef(null);
   const abortRef = nUseRef(false);
+  const followRef = nUseRef(true);  // 전체 실행 중 진행 문항 자동 추적 (사용자 수동 선택 시 false)
+  const runningRef = nUseRef(null);  // 현재 실행 중 문항 id
   const Q = window.QUESTIONS;
 
   nUseEffect(() => { (async () => {
@@ -81,7 +83,8 @@ function NLScreen() {
 
   async function runOne(q, live) {
     const T = live ? N_T.live : N_T.batch;
-    setActive(q.id);
+    runningRef.current = q.id;
+    if (live || followRef.current) setActive(q.id);  // 단건은 항상, 전체 실행 중엔 추적 켜진 경우만
     setRes(q.id, { status: "running", events: [], final: null, verdict: null, execRows: null });
     const events = [];
     const push = (e) => { events.push(e); setRes(q.id, { events: [...events] }); };
@@ -119,14 +122,14 @@ function NLScreen() {
   }
 
   async function runAll() {
-    abortRef.current = false; setBusy(true);
+    abortRef.current = false; followRef.current = true; setBusy(true);
     for (const q of Q) {
       if (abortRef.current) break;
       const ex = results[q.id];
       if (ex && ex.status === "done") continue;
       try { await runOne(q, false); } catch (e) { setRes(q.id, { status: "done", verdict: { verdict: "wrong", flags: [], detail: "실행 오류: " + e, cat: q.cat, ops_recall: 0, n_ops: 0 } }); }
     }
-    setBusy(false);
+    followRef.current = true; setBusy(false);
   }
 
   function harnessSelfCheck() {
@@ -242,7 +245,10 @@ function NLScreen() {
             {Q.filter((q) => q.cat === cat).map((q) => {
               const r = results[q.id]; const v = r && r.verdict;
               return (
-                <div key={q.id} onClick={() => !busy && (r && r.events ? setActive(q.id) : runOne(q, true))}
+                <div key={q.id} onClick={() => {
+                    if (r && r.status === "done") { followRef.current = false; setActive(q.id); }  // 완료분: 언제나 조회, 자동추적 정지
+                    else if (!busy) { runOne(q, true); }  // 미완료: 실행중 아닐 때만 단건 실행
+                  }}
                   style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer",
                            background: active === q.id ? "rgba(255,255,255,0.05)" : "transparent",
                            borderLeft: active === q.id ? "2px solid var(--accent)" : "2px solid transparent" }}>
@@ -269,6 +275,13 @@ function NLScreen() {
       <div style={{ display: "flex", overflow: "hidden" }}>
         <div style={{ flex: "0 0 60%", padding: "20px 24px", overflowY: "auto", borderRight: "1px solid var(--border)" }}>
           {!active && <Center>질문을 클릭하면 단건 실행(라이브), 전체 실행은 좌측 버튼.</Center>}
+          {busy && !followRef.current && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "7px 12px",
+                          background: "var(--sig)15", border: "1px solid var(--sig)44", borderRadius: 5 }}>
+              <span style={{ ...mono, fontSize: 11, color: "var(--sig)" }}>진행 추적 멈춤 — 완료된 문항을 보는 중</span>
+              <span onClick={() => { followRef.current = true; if (runningRef.current) setActive(runningRef.current); }} style={{ ...mono, fontSize: 11, color: "var(--accent)",
+                border: "1px solid var(--accent)66", borderRadius: 4, padding: "2px 9px", cursor: "pointer" }}>최신으로 따라가기</span>
+            </div>)}
           {active && <Thread q={Q.find((x) => x.id === active)} r={results[active]} />}
         </div>
         <div style={{ flex: "0 0 40%", padding: "20px 22px", overflowY: "auto", background: "rgba(0,0,0,0.12)" }}>
