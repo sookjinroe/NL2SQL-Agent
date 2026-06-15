@@ -600,32 +600,35 @@ const MARKER_TIP = {
 
 // 커스텀 툴팁 — 앱 토큰 스타일, 마커 위에 말풍선
 function MarkerChip({ m, small }) {
-  const [show, setShow] = eUseState(false);
+  const [pos, setPos] = eUseState(null);
   const ref = eUseRef(null);
   const tip = MARKER_TIP[m.split(":")[0]] || null;
   const color = MARKER_COLOR[m.split(":")[0]] || "var(--dim)";
+  const W = 260;
+  const show = () => {
+    if (!tip || !ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    const above = r.top > 120;
+    let cx = r.left + r.width / 2;
+    cx = Math.max(8 + W / 2, Math.min(window.innerWidth - 8 - W / 2, cx));
+    setPos({ x: cx, y: above ? r.top - 6 : r.bottom + 6, placement: above ? "above" : "below" });
+  };
   return (
-    <span ref={ref} style={{ position: "relative", display: "inline-block", flexShrink: 0 }}
-      onMouseEnter={() => tip && setShow(true)} onMouseLeave={() => setShow(false)}>
+    <span ref={ref} style={{ display: "inline-block", flexShrink: 0 }}
+      onMouseEnter={show} onMouseLeave={() => setPos(null)}>
       <span style={{ ...eMono, fontSize: small ? 9 : 11, color,
         border: `1px solid ${color}66`, borderRadius: small ? 3 : 4,
         padding: small ? "0px 4px" : "2px 8px",
-        cursor: tip ? "default" : "default",
         display: "inline-block", marginRight: small ? 0 : 6, marginBottom: small ? 0 : 4 }}>{m}</span>
-      {show && tip && (
-        <span style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%",
-                       transform: "translateX(-50%)", zIndex: 100,
-                       background: "var(--panel)", border: "1px solid var(--border)",
-                       borderRadius: 5, padding: "7px 11px", width: 260,
+      {pos && tip && (
+        <span style={{ position: "fixed", left: pos.x, top: pos.y,
+                       transform: `translateX(-50%) ${pos.placement === "above" ? "translateY(-100%)" : ""}`,
+                       zIndex: 9999, background: "var(--panel)", border: "1px solid var(--border)",
+                       borderRadius: 5, padding: "7px 11px", width: W,
                        boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
                        pointerEvents: "none", whiteSpace: "normal" }}>
           <span style={{ ...eMono, fontSize: 10, color, display: "block", marginBottom: 3 }}>{m}</span>
           <span style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.6 }}>{tip}</span>
-          {/* 말풍선 꼬리 */}
-          <span style={{ position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)",
-                         width: 8, height: 8, background: "var(--panel)",
-                         border: "1px solid var(--border)", borderTop: "none", borderLeft: "none",
-                         transform: "translateX(-50%) rotate(45deg)" }} />
         </span>)}
     </span>);
 }

@@ -26,27 +26,34 @@ const NL_MARKER_TIP = {
   "형식": "Description의 값 형식(YYYYMM 등)을 get_column으로 안 보면 0행 — 조회 건너뛰면 반드시 실패",
 };
 function NLMarkerChip({ m }) {
-  const [show, setShow] = nUseState(false);
+  const [pos, setPos] = nUseState(null);  // null=숨김, {x,y,placement}
+  const ref = nUseRef(null);
   const tip = NL_MARKER_TIP[m.split(":")[0]] || null;
   const color = NL_MARKER_COLOR[m.split(":")[0]] || "var(--dim)";
+  const W = 260;
+  const show = () => {
+    if (!tip || !ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    const above = r.top > 120;  // 위 공간 충분하면 위, 아니면 아래
+    // 좌우: 칩 중앙 기준, 뷰포트 8px 여백으로 클램프
+    let cx = r.left + r.width / 2;
+    cx = Math.max(8 + W / 2, Math.min(window.innerWidth - 8 - W / 2, cx));
+    setPos({ x: cx, y: above ? r.top - 6 : r.bottom + 6, placement: above ? "above" : "below" });
+  };
   return (
-    <span style={{ position: "relative", display: "inline-block", flexShrink: 0 }}
-      onMouseEnter={() => tip && setShow(true)} onMouseLeave={() => setShow(false)}>
+    <span ref={ref} style={{ display: "inline-block", flexShrink: 0 }}
+      onMouseEnter={show} onMouseLeave={() => setPos(null)}>
       <span style={{ ...mono, fontSize: 9, color,
         border: `1px solid ${color}55`, borderRadius: 3, padding: "0px 4px" }}>{m}</span>
-      {show && tip && (
-        <span style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%",
-                       transform: "translateX(-50%)", zIndex: 100,
-                       background: "#13161b", border: "1px solid var(--border)",
-                       borderRadius: 5, padding: "7px 11px", width: 260,
+      {pos && tip && (
+        <span style={{ position: "fixed", left: pos.x, top: pos.y,
+                       transform: `translateX(-50%) ${pos.placement === "above" ? "translateY(-100%)" : ""}`,
+                       zIndex: 9999, background: "#13161b", border: "1px solid var(--border)",
+                       borderRadius: 5, padding: "7px 11px", width: W,
                        boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
                        pointerEvents: "none", whiteSpace: "normal" }}>
           <span style={{ ...mono, fontSize: 10, color, display: "block", marginBottom: 3 }}>{m}</span>
           <span style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.6 }}>{tip}</span>
-          <span style={{ position: "absolute", bottom: -5, left: "50%",
-                         width: 8, height: 8, background: "#13161b",
-                         border: "1px solid var(--border)", borderTop: "none", borderLeft: "none",
-                         transform: "translateX(-50%) rotate(45deg)" }} />
         </span>)}
     </span>);
 }
