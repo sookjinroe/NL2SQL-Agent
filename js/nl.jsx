@@ -185,29 +185,21 @@ function NLScreen() {
   }
 
   // ---- 스냅샷 불러오기 ----
-  function loadSnapshot(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const snap = JSON.parse(e.target.result);
-        if (!snap.version || !snap.results) throw new Error("형식 불일치");
-        const loaded = {};
-        for (const [id, r] of Object.entries(snap.results)) {
-          loaded[id] = { status: "done", events: r.events || [], final: r.final,
-                         verdict: r.verdict, opsTrace: r.opsTrace || [] };
-        }
-        setResults(loaded);
-        const cnt = Object.keys(loaded).length;
-        const model = snap.model || "알 수 없음";
-        const date = snap.created ? snap.created.slice(0, 10) : "날짜 미상";
-        setNote(`스냅샷 로드 완료 — ${cnt}문항 · ${model} · ${date}`);
-        setTimeout(() => setNote(null), 4000);
-      } catch (err) {
-        setNote("스냅샷 로드 실패: " + (err.message || err));
-        setTimeout(() => setNote(null), 4000);
-      }
-    };
-    reader.readAsText(file);
+  function applySnapshot(snap, silent) {
+    if (!snap || !snap.version || !snap.results) throw new Error("형식 불일치");
+    const loaded = {};
+    for (const [id, r] of Object.entries(snap.results)) {
+      loaded[id] = { status: "done", events: r.events || [], final: r.final,
+                     verdict: r.verdict, opsTrace: r.opsTrace || [] };
+    }
+    setResults(loaded);
+    if (!silent) {
+      const cnt = Object.keys(loaded).length;
+      const model = snap.model || "알 수 없음";
+      const date = snap.created ? snap.created.slice(0, 10) : "날짜 미상";
+      setNote(`스냅샷 로드 완료 — ${cnt}문항 · ${model} · ${date}`);
+      setTimeout(() => setNote(null), 4000);
+    }
   }
 
   // ---- 집계 ----
@@ -223,7 +215,7 @@ function NLScreen() {
       <div style={{ borderRight: "1px solid var(--border)", padding: "18px 16px", overflowY: "auto" }}>
         <div style={{ ...mono, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>NL 에이전트 · 레이어 소비 검증</div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 14 }}>
-          충분히 채워진 시맨틱 레이어가 주어졌을 때, 레이어를 소비하는 에이전트의 로직이 중규모에서 성립하는가
+          충분히 채워진 시맨틱 레이어가 주어졌을 때, 레이어를 소비하는 에이전트의 로직이 성립하는가
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
           <Btn on={!busy} color="var(--accent)" onClick={runAll}>전체 실행</Btn>
@@ -231,12 +223,9 @@ function NLScreen() {
           <Btn on={!busy} color="var(--dim)" onClick={harnessSelfCheck}>하니스 자가검증</Btn>
           <Btn on={done.length > 0} color="var(--dim)" onClick={downloadResults}>결과 JSONL</Btn>
           <Btn on={done.length > 0} color="var(--sig)" onClick={saveSnapshot}>스냅샷 저장</Btn>
-          <label style={{ ...mono, fontSize: 12, padding: "5px 12px", borderRadius: 4, cursor: "pointer",
-            border: "1px solid var(--sig)66", background: "var(--sig)18", color: "var(--sig)" }}>
-            스냅샷 불러오기
-            <input type="file" accept=".json" style={{ display: "none" }}
-              onChange={(e) => e.target.files[0] && loadSnapshot(e.target.files[0])} />
-          </label>
+          <Btn on={!!window.NLSnapshot} color="var(--sig)" onClick={() => {
+            try { applySnapshot(window.NLSnapshot); } catch (e) { setNote("스냅샷 로드 실패: " + (e.message||e)); setTimeout(()=>setNote(null),4000); }
+          }}>스냅샷 불러오기</Btn>
         </div>
         {selfCheck && <div style={{ ...mono, fontSize: 12, color: "var(--sig)", marginBottom: 8 }}>{selfCheck}</div>}
         {note && <div style={{ ...mono, fontSize: 11.5, color: "var(--med)", marginBottom: 8 }}>{note}</div>}
