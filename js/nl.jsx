@@ -25,6 +25,37 @@ const NL_MARKER_TIP = {
   "조인": "FK 경로를 타야 풀리는 문항 — 경로와 grain 처리를 함께 검증",
   "형식": "Description의 값 형식(YYYYMM 등)을 get_column으로 안 보면 0행 — 조회 건너뛰면 반드시 실패",
 };
+function QuestionRow({ q, r, active, busy, onView, onRun }) {
+  const [hover, setHover] = nUseState(false);
+  const v = r && r.verdict;
+  const done = r && r.status === "done";
+  const bg = active ? "rgba(255,255,255,0.05)" : (hover ? "rgba(255,255,255,0.025)" : "transparent");
+  return (
+    <div onClick={() => { if (done) onView(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer", transition: "background .12s",
+               background: bg, borderLeft: active ? "2px solid var(--accent)" : "2px solid transparent" }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+        <span style={{ width: 7, height: 7, borderRadius: 7, flexShrink: 0, alignSelf: "center",
+                       background: v ? VCOLOR[v.verdict] : (r && r.status === "running" ? "var(--sig)" : "var(--border)") }} />
+        <span style={{ lineHeight: 1.5, flex: 1, minWidth: 0 }}>
+          <span style={{ ...mono, fontSize: 10, color: "var(--dim)", marginRight: 5 }}>{q.id}</span>
+          <span style={{ fontSize: 12, color: "var(--text)" }}>{q.text}</span>
+          {((q.checkpoint||{}).markers||[]).map((m) => (
+            <span key={m} style={{ marginLeft: 5 }}><NLMarkerChip m={m} /></span>))}
+        </span>
+        <span onClick={(e) => { e.stopPropagation(); onRun(); }}
+          title={done ? "다시 실행" : "실행"}
+          style={{ ...mono, fontSize: 11, flexShrink: 0, alignSelf: "center", padding: "1px 6px", borderRadius: 4,
+                   cursor: busy ? "default" : "pointer",
+                   opacity: busy ? 0.3 : (hover ? 1 : 0.55), transition: "opacity .12s",
+                   color: done ? "var(--sig)" : "var(--accent)",
+                   border: `1px solid ${done ? "var(--sig)" : "var(--accent)"}${hover ? "88" : "44"}` }}>▷</span>
+      </div>
+      {v && v.flags.length > 0 && (
+        <div style={{ ...mono, fontSize: 9, color: "var(--low)", paddingLeft: 14, marginTop: 2 }}>{v.flags.join(" · ")}</div>)}
+    </div>);
+}
 function NLMarkerChip({ m }) {
   const [pos, setPos] = nUseState(null);  // null=숨김, {x,y,placement}
   const ref = nUseRef(null);
@@ -238,34 +269,10 @@ function NLScreen() {
             <div style={{ ...mono, fontSize: 11, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 6 }}>
               {CATL[cat].toUpperCase()}
             </div>
-            {Q.filter((q) => q.cat === cat).map((q) => {
-              const r = results[q.id]; const v = r && r.verdict;
-              return (
-                <div key={q.id} onClick={() => { if (r && r.status === "done") { followRef.current = false; setActive(q.id); } }}
-                  style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer",
-                           background: active === q.id ? "rgba(255,255,255,0.05)" : "transparent",
-                           borderLeft: active === q.id ? "2px solid var(--accent)" : "2px solid transparent" }}>
-                  <div style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
-                    <span style={{ width: 7, height: 7, borderRadius: 7, flexShrink: 0, alignSelf: "center",
-                                   background: v ? VCOLOR[v.verdict] : (r && r.status === "running" ? "var(--sig)" : "var(--border)") }} />
-                    <span style={{ lineHeight: 1.5, flex: 1, minWidth: 0 }}>
-                      <span style={{ ...mono, fontSize: 10, color: "var(--dim)", marginRight: 5 }}>{q.id}</span>
-                      <span style={{ fontSize: 12, color: "var(--text)" }}>{q.text}</span>
-                      {((q.checkpoint||{}).markers||[]).map((m) => (
-                        <span key={m} style={{ marginLeft: 5 }}><NLMarkerChip m={m} /></span>))}
-                    </span>
-                    <span onClick={(e) => { e.stopPropagation(); if (!busy) runOne(q, true); }}
-                      title={r && r.status === "done" ? "다시 실행" : "실행"}
-                      style={{ ...mono, fontSize: 11, flexShrink: 0, alignSelf: "center", padding: "1px 6px", borderRadius: 4,
-                               cursor: busy ? "default" : "pointer", opacity: busy ? 0.3 : 0.75,
-                               color: r && r.status === "done" ? "var(--sig)" : "var(--accent)",
-                               border: `1px solid ${r && r.status === "done" ? "var(--sig)" : "var(--accent)"}44` }}>▷</span>
-                  </div>
-                  {v && v.flags.length > 0 && (
-                    <div style={{ ...mono, fontSize: 9, color: "var(--low)", paddingLeft: 14, marginTop: 2 }}>{v.flags.join(" · ")}</div>)}
-                </div>
-              );
-            })}
+            {Q.filter((q) => q.cat === cat).map((q) => (
+              <QuestionRow key={q.id} q={q} r={results[q.id]} active={active === q.id} busy={busy}
+                onView={() => { followRef.current = false; setActive(q.id); }}
+                onRun={() => { if (!busy) runOne(q, true); }} />))}
           </div>
         ))}
       </div>

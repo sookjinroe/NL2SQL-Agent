@@ -145,6 +145,15 @@ function Chip({ color, children, onClick }) {
     border: `1px solid ${color || "var(--border)"}66`, borderRadius: 4, padding: "2px 9px",
     marginRight: 6, marginBottom: 5, display: "inline-block", cursor: onClick ? "pointer" : "default" }}>{children}</span>;
 }
+function HoverRow({ active, onClick, children, style }) {
+  const [hover, setHover] = eUseState(false);
+  const bg = active ? "rgba(255,255,255,0.06)" : (hover ? "rgba(255,255,255,0.03)" : "transparent");
+  return (
+    <div onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ ...style, background: bg, transition: "background .12s", cursor: "pointer" }}>
+      {children}
+    </div>);
+}
 function ECenter({ children }) {
   return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", color: "var(--muted)", fontSize: 13.5 }}>{children}</div>;
 }
@@ -169,13 +178,12 @@ function TableView({ db, L, idx, counts, route, nav }) {
     <div key={d} style={{ marginBottom: 12 }}>
       <div style={{ ...eMono, fontSize: 11, letterSpacing: "0.08em", color: DOM_COLOR[d], marginBottom: 5 }}>{d}</div>
       {L.tables.filter((t) => t.domain === d).map((t) => (
-        <div key={t.name} onClick={() => nav("table", t.name)}
-          style={{ display: "flex", gap: 8, alignItems: "baseline", padding: "3.5px 8px", borderRadius: 4, cursor: "pointer",
-                   background: sel === t.name ? "rgba(255,255,255,0.06)" : "transparent" }}>
+        <HoverRow key={t.name} active={sel === t.name} onClick={() => nav("table", t.name)}
+          style={{ display: "flex", gap: 8, alignItems: "baseline", padding: "3.5px 8px", borderRadius: 4 }}>
           <span style={{ ...eMono, fontSize: 11.5, color: "var(--text)" }}>{t.name}</span>
           <span style={{ flex: 1 }} />
           <span style={{ ...eMono, fontSize: 10, color: "var(--dim)" }}>{(counts[t.name] || 0).toLocaleString()}</span>
-        </div>))}
+        </HoverRow>))}
     </div>));
   return <TwoPane left={left} right={<TableDetail db={db} L={L} idx={idx} name={sel} counts={counts} hl={route.hl} nav={nav} />} />;
 }
@@ -362,9 +370,8 @@ function TermView({ L, idx, route, nav }) {
         const active = sel===t.name;
         const hasCol = (t.synonyms||[]).some((s)=>(idx.surfaceCount[s]||1)>=2);
         return (
-          <div key={t.name} onClick={()=>nav("term",t.name)}
-            style={{padding:"5px 7px",borderRadius:4,cursor:"pointer",marginBottom:1,
-                    background:active?"rgba(255,255,255,0.07)":"transparent",
+          <HoverRow key={t.name} active={active} onClick={()=>nav("term",t.name)}
+            style={{padding:"5px 7px",borderRadius:4,marginBottom:1,
                     borderLeft:active?"2px solid var(--accent)":"2px solid transparent"}}>
             <div style={{display:"flex",alignItems:"center",gap:5}}>
               <span style={{fontSize:12.5,color:active?"var(--text)":"var(--muted)",flex:1,lineHeight:1.4}}>{t.name}</span>
@@ -372,7 +379,7 @@ function TermView({ L, idx, route, nav }) {
               {t.family&&<span style={{...eMono,fontSize:8.5,color:"var(--med)"}}>{t.family.split("_")[0]}</span>}
             </div>
             <div style={{...eMono,fontSize:9.5,color:"var(--dim)"}}>{(t.links||[]).length} links</div>
-          </div>);
+          </HoverRow>);
       })}
     </div>);
   return (
@@ -442,12 +449,11 @@ function TermDetail({ L, idx, name, nav }) {
 function MetricView({ L, idx, route, nav }) {
   const sel = route.sel || L.metrics[0].id;
   const left = L.metrics.map((m) => (
-    <div key={m.id} onClick={() => nav("metric", m.id)}
-      style={{ padding: "5px 8px", borderRadius: 4, cursor: "pointer",
-               background: sel === m.id ? "rgba(255,255,255,0.06)" : "transparent" }}>
+    <HoverRow key={m.id} active={sel === m.id} onClick={() => nav("metric", m.id)}
+      style={{ padding: "5px 8px", borderRadius: 4 }}>
       <div style={{ fontSize: 12.5, color: "var(--text)" }}>{m.name}</div>
       <div style={{ ...eMono, fontSize: 10, color: "var(--dim)" }}>{m.id}</div>
-    </div>));
+    </HoverRow>));
   const m = L.metrics.find((x) => x.id === sel) || L.metrics[0];
   const right = (
     <div style={{ maxWidth: 820 }}>
@@ -639,9 +645,8 @@ function QuestionView({ db, Q, route, nav }) {
           <div style={{ fontSize: 10.5, color: "var(--dim)", marginTop: 2, lineHeight: 1.5 }}>{ECAT[cat].desc}</div>
         </div>
       {Q.filter((q) => q.cat === cat).map((q) => (
-        <div key={q.id} onClick={() => nav("question", q.id)}
-          style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer",
-                   background: sel === q.id ? "rgba(255,255,255,0.06)" : "transparent",
+        <HoverRow key={q.id} active={sel === q.id} onClick={() => nav("question", q.id)}
+          style={{ padding: "4px 8px", borderRadius: 4,
                    borderLeft: sel === q.id ? "2px solid var(--accent)" : "2px solid transparent" }}>
           <div style={{ lineHeight: 1.5 }}>
             <span style={{ ...eMono, fontSize: 10, color: "var(--dim)", marginRight: 5 }}>{q.id}</span>
@@ -649,7 +654,7 @@ function QuestionView({ db, Q, route, nav }) {
             {(q.checkpoint && q.checkpoint.markers || []).map((m) => (
               <span key={m} style={{ marginLeft: 5 }}><MarkerChip m={m} small={true} /></span>))}
           </div>
-        </div>))}
+        </HoverRow>))}
     </div>));
   const q = Q.find((x) => x.id === sel) || Q[0];
   return <TwoPane left={left} right={<QDetail db={db} q={q} />} />;
