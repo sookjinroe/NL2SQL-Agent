@@ -29,9 +29,10 @@ function QuestionRow({ q, r, active, busy, onView, onRun }) {
   const [hover, setHover] = nUseState(false);
   const v = r && r.verdict;
   const done = r && r.status === "done";
+  const viewable = r && (r.status === "done" || r.status === "running");  // 실행 중도 진행 트레이스 조회 가능
   const bg = active ? "rgba(255,255,255,0.05)" : (hover ? "rgba(255,255,255,0.025)" : "transparent");
   return (
-    <div onClick={() => { if (done) onView(); }}
+    <div onClick={() => { if (viewable) onView(); }}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ padding: "4px 8px", borderRadius: 4, cursor: "pointer", transition: "background .12s",
                background: bg, borderLeft: active ? "2px solid var(--accent)" : "2px solid transparent" }}>
@@ -271,7 +272,7 @@ function NLScreen() {
             </div>
             {Q.filter((q) => q.cat === cat).map((q) => (
               <QuestionRow key={q.id} q={q} r={results[q.id]} active={active === q.id} busy={busy}
-                onView={() => { followRef.current = false; setActive(q.id); }}
+                onView={() => { if (q.id !== runningRef.current) followRef.current = false; setActive(q.id); }}
                 onRun={() => { if (!busy) runOne(q, true); }} />))}
           </div>
         ))}
