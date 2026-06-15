@@ -27,33 +27,33 @@ function DashboardView({ db, L, Q, counts, idx, nav }) {
 
   const Stat = ({ label, value, sub }) => (
     <div style={{ border: "1px solid var(--border)", borderRadius: 7, padding: "14px 16px", background: "rgba(255,255,255,0.015)" }}>
-      <div style={{ ...dMono, fontSize: 10.5, letterSpacing: "0.06em", color: "var(--dim)", marginBottom: 6 }}>{label}</div>
-      <div style={{ ...dMono, fontSize: 22, fontWeight: 700, color: "var(--text)" }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>{sub}</div>}
+      <div style={{ ...dMono, fontSize: 11.5, letterSpacing: "0.06em", color: "var(--dim)", marginBottom: 6 }}>{label}</div>
+      <div style={{ ...dMono, fontSize: 24, fontWeight: 700, color: "var(--text)" }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>{sub}</div>}
     </div>);
   const Bar = ({ label, a, b, color, note }) => (
     <div style={{ marginBottom: 11 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 12, color: "var(--text)" }}>{label}</span>
-        <span style={{ ...dMono, fontSize: 11.5, color: "var(--muted)" }}>{a}/{b} · {pct(a,b)}%</span>
+        <span style={{ fontSize: 13, color: "var(--text)" }}>{label}</span>
+        <span style={{ ...dMono, fontSize: 12.5, color: "var(--muted)" }}>{a}/{b} · {pct(a,b)}%</span>
       </div>
       <div style={{ height: 8, background: "rgba(255,255,255,0.05)", borderRadius: 4 }}>
         <div style={{ width: `${pct(a,b)}%`, height: "100%", borderRadius: 4, background: color, opacity: 0.8 }} />
       </div>
-      {note && <div style={{ fontSize: 10.5, color: "var(--dim)", marginTop: 3 }}>{note}</div>}
+      {note && <div style={{ fontSize: 11.5, color: "var(--dim)", marginTop: 3 }}>{note}</div>}
     </div>);
   const Sec = ({ title, desc, children }) => (
     <div style={{ marginBottom: 30 }}>
-      <div style={{ ...dMono, fontSize: 12, letterSpacing: "0.06em", color: "var(--muted)", marginBottom: 4 }}>{title}</div>
-      {desc && <div style={{ fontSize: 11.5, color: "var(--dim)", marginBottom: 12, lineHeight: 1.55 }}>{desc}</div>}
+      <div style={{ ...dMono, fontSize: 13, letterSpacing: "0.06em", color: "var(--muted)", marginBottom: 4 }}>{title}</div>
+      {desc && <div style={{ fontSize: 12.5, color: "var(--dim)", marginBottom: 12, lineHeight: 1.55 }}>{desc}</div>}
       {children}
     </div>);
 
   return (
     <div style={{ padding: "22px 28px", maxWidth: 1000, margin: "0 auto" }}>
       <div style={{ marginBottom: 26 }}>
-        <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 5 }}>합성 금융 코퍼스 — 시맨틱 레이어 소비 검증</div>
-        <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6 }}>
+        <div style={{ fontSize: 18.5, fontWeight: 700, marginBottom: 5 }}>합성 금융 코퍼스 — 시맨틱 레이어 소비 검증</div>
+        <div style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.6 }}>
           충분히 채워진 시맨틱 레이어를 전제로, 그 레이어를 소비하는 NL2SQL 에이전트의 로직이 성립하는지 검증하기 위한 합성 데이터셋.
           5개 도메인(고객·여신·카드·수신·리스크)에 걸친 스키마와 의미 레이어, 그리고 조회 행동을 검증하는 질문셋으로 구성된다.
         </div>
@@ -89,9 +89,9 @@ function DashboardView({ db, L, Q, counts, idx, nav }) {
             return (
               <div key={k} onClick={() => nav && nav("question", Q.find((q)=>q.cat===k)?.id)}
                 style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
-                <div style={{ ...dMono, fontSize: 12, color: "var(--text)", marginBottom: 4 }}>{n}</div>
+                <div style={{ ...dMono, fontSize: 13, color: "var(--text)", marginBottom: 4 }}>{n}</div>
                 <div style={{ width: "100%", height: `${n/max*70}px`, background: "var(--accent)", opacity: 0.7, borderRadius: "3px 3px 0 0" }} />
-                <div style={{ fontSize: 10.5, color: "var(--muted)", marginTop: 6, textAlign: "center" }}>{label}</div>
+                <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6, textAlign: "center" }}>{label}</div>
               </div>);
           })}
         </div>
@@ -102,7 +102,7 @@ function DashboardView({ db, L, Q, counts, idx, nav }) {
           <Stat label="충돌 패밀리" value={Object.keys(idx.families).length} sub="도메인 간 충돌 군" />
           <Stat label="동의어 충돌" value={idx.collisions.length} sub="복수 Term에 닿는 표면형" />
           <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
-            <span onClick={() => nav && nav("collision")} style={{ ...dMono, fontSize: 11.5, color: "var(--lin)", cursor: "pointer",
+            <span onClick={() => nav && nav("collision")} style={{ ...dMono, fontSize: 12.5, color: "var(--lin)", cursor: "pointer",
               border: "1px solid var(--lin)66", borderRadius: 5, padding: "8px 14px" }}>충돌 지도 보기 →</span>
           </div>
         </div>

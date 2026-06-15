@@ -40,21 +40,21 @@ function QuestionRow({ q, r, active, busy, onView, onRun }) {
         <span style={{ width: 7, height: 7, borderRadius: 7, flexShrink: 0, alignSelf: "center",
                        background: v ? VCOLOR[v.verdict] : (r && r.status === "running" ? "var(--sig)" : "var(--border)") }} />
         <span style={{ lineHeight: 1.5, flex: 1, minWidth: 0 }}>
-          <span style={{ ...mono, fontSize: 10, color: "var(--dim)", marginRight: 5 }}>{q.id}</span>
-          <span style={{ fontSize: 12, color: "var(--text)" }}>{q.text}</span>
+          <span style={{ ...mono, fontSize: 11, color: "var(--dim)", marginRight: 5 }}>{q.id}</span>
+          <span style={{ fontSize: 13, color: "var(--text)" }}>{q.text}</span>
           {((q.checkpoint||{}).markers||[]).map((m) => (
             <span key={m} style={{ marginLeft: 5 }}><NLMarkerChip m={m} /></span>))}
         </span>
         <span onClick={(e) => { e.stopPropagation(); onRun(); }}
           title={done ? "다시 실행" : "실행"}
-          style={{ ...mono, fontSize: 11, flexShrink: 0, alignSelf: "center", padding: "1px 6px", borderRadius: 4,
+          style={{ ...mono, fontSize: 12, flexShrink: 0, alignSelf: "center", padding: "1px 6px", borderRadius: 4,
                    cursor: busy ? "default" : "pointer",
                    opacity: busy ? 0.3 : (hover ? 1 : 0.55), transition: "opacity .12s",
                    color: done ? "var(--sig)" : "var(--accent)",
                    border: `1px solid ${done ? "var(--sig)" : "var(--accent)"}${hover ? "88" : "44"}` }}>▷</span>
       </div>
       {v && v.flags.length > 0 && (
-        <div style={{ ...mono, fontSize: 9, color: "var(--low)", paddingLeft: 14, marginTop: 2 }}>{v.flags.join(" · ")}</div>)}
+        <div style={{ ...mono, fontSize: 10, color: "var(--low)", paddingLeft: 14, marginTop: 2 }}>{v.flags.join(" · ")}</div>)}
     </div>);
 }
 function NLMarkerChip({ m }) {
@@ -75,7 +75,7 @@ function NLMarkerChip({ m }) {
   return (
     <span ref={ref} style={{ display: "inline-block", flexShrink: 0 }}
       onMouseEnter={show} onMouseLeave={() => setPos(null)}>
-      <span style={{ ...mono, fontSize: 9, color,
+      <span style={{ ...mono, fontSize: 10, color,
         border: `1px solid ${color}55`, borderRadius: 3, padding: "0px 4px" }}>{m}</span>
       {pos && tip && (
         <span style={{ position: "fixed", left: pos.x, top: pos.y,
@@ -84,8 +84,8 @@ function NLMarkerChip({ m }) {
                        borderRadius: 5, padding: "7px 11px", width: W,
                        boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
                        pointerEvents: "none", whiteSpace: "normal" }}>
-          <span style={{ ...mono, fontSize: 10, color, display: "block", marginBottom: 3 }}>{m}</span>
-          <span style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.6 }}>{tip}</span>
+          <span style={{ ...mono, fontSize: 11, color, display: "block", marginBottom: 3 }}>{m}</span>
+          <span style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6 }}>{tip}</span>
         </span>)}
     </span>);
 }
@@ -245,8 +245,8 @@ function NLScreen() {
     <div style={{ display: "grid", gridTemplateColumns: "390px 1fr", gap: 0, minHeight: "100vh" }}>
       {/* ---- 좌: 제어 + 스코어보드 + 질문 목록 ---- */}
       <div style={{ borderRight: "1px solid var(--border)", padding: "18px 16px", overflowY: "auto" }}>
-        <div style={{ ...mono, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>NL 에이전트 · 레이어 소비 검증</div>
-        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 14 }}>
+        <div style={{ ...mono, fontSize: 16.5, fontWeight: 600, marginBottom: 4 }}>NL 에이전트 · 레이어 소비 검증</div>
+        <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 14 }}>
           충분히 채워진 시맨틱 레이어가 주어졌을 때, 레이어를 소비하는 에이전트의 로직이 성립하는가
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
@@ -259,15 +259,15 @@ function NLScreen() {
             try { applySnapshot(window.NLSnapshot); } catch (e) { setNote("스냅샷 로드 실패: " + (e.message||e)); setTimeout(()=>setNote(null),4000); }
           }}>스냅샷 불러오기</Btn>
         </div>
-        {selfCheck && <div style={{ ...mono, fontSize: 12, color: "var(--sig)", marginBottom: 8 }}>{selfCheck}</div>}
-        {note && <div style={{ ...mono, fontSize: 11.5, color: "var(--med)", marginBottom: 8 }}>{note}</div>}
+        {selfCheck && <div style={{ ...mono, fontSize: 13, color: "var(--sig)", marginBottom: 8 }}>{selfCheck}</div>}
+        {note && <div style={{ ...mono, fontSize: 12.5, color: "var(--med)", marginBottom: 8 }}>{note}</div>}
         {!window.LiveAPI.hasKey() && <KeyBox />}
 
         {agg && <Scoreboard agg={agg} total={done.length} />}
 
         {Object.keys(CATL).map((cat) => (
           <div key={cat} style={{ marginTop: 14 }}>
-            <div style={{ ...mono, fontSize: 11, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 6 }}>
+            <div style={{ ...mono, fontSize: 12, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 6 }}>
               {CATL[cat].toUpperCase()}
             </div>
             {Q.filter((q) => q.cat === cat).map((q) => (
@@ -285,14 +285,14 @@ function NLScreen() {
           {busy && !followRef.current && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "7px 12px",
                           background: "var(--sig)15", border: "1px solid var(--sig)44", borderRadius: 5 }}>
-              <span style={{ ...mono, fontSize: 11, color: "var(--sig)" }}>진행 추적 멈춤 — 완료된 문항을 보는 중</span>
-              <span onClick={() => { followRef.current = true; if (runningRef.current) setActive(runningRef.current); }} style={{ ...mono, fontSize: 11, color: "var(--accent)",
+              <span style={{ ...mono, fontSize: 12, color: "var(--sig)" }}>진행 추적 멈춤 — 완료된 문항을 보는 중</span>
+              <span onClick={() => { followRef.current = true; if (runningRef.current) setActive(runningRef.current); }} style={{ ...mono, fontSize: 12, color: "var(--accent)",
                 border: "1px solid var(--accent)66", borderRadius: 4, padding: "2px 9px", cursor: "pointer" }}>최신으로 따라가기</span>
             </div>)}
           {active && <Thread q={Q.find((x) => x.id === active)} r={results[active]} />}
         </div>
         <div style={{ flex: "0 0 40%", padding: "20px 22px", overflowY: "auto", background: "rgba(0,0,0,0.12)" }}>
-          {!active && <Center style={{ fontSize: 12.5 }}>질문을 선택하면 상세 정보가 표시됩니다.</Center>}
+          {!active && <Center style={{ fontSize: 14 }}>질문을 선택하면 상세 정보가 표시됩니다.</Center>}
           {active && window.QDetail && <window.QDetail db={dbRef.current} q={Q.find((x) => x.id === active)} />}
         </div>
       </div>
@@ -305,29 +305,29 @@ function Thread({ q, r }) {
   if (!r) return null;
   return (
     <div style={{ maxWidth: 860 }}>
-      <div style={{ ...mono, fontSize: 11, color: "var(--muted)" }}>{q.id} · {CATL[q.cat]}</div>
-      <div style={{ fontSize: 17, fontWeight: 600, margin: "6px 0 18px" }}>{q.text}</div>
+      <div style={{ ...mono, fontSize: 12, color: "var(--muted)" }}>{q.id} · {CATL[q.cat]}</div>
+      <div style={{ fontSize: 18.5, fontWeight: 600, margin: "6px 0 18px" }}>{q.text}</div>
       {(r.events || []).map((e, i) => <Event key={i} e={e} q={q} />)}
-      {r.status === "running" && <div style={{ ...mono, fontSize: 12, color: "var(--sig)", animation: "pulse 1s infinite" }}>실행 중…</div>}
+      {r.status === "running" && <div style={{ ...mono, fontSize: 13, color: "var(--sig)", animation: "pulse 1s infinite" }}>실행 중…</div>}
     </div>
   );
 }
 
 function Event({ e, q }) {
   if (e.k === "think")
-    return <div style={{ borderLeft: "2px solid var(--med)", padding: "4px 12px", margin: "10px 0", fontSize: 13, color: "var(--muted)", fontStyle: "italic" }}>{e.text}</div>;
+    return <div style={{ borderLeft: "2px solid var(--med)", padding: "4px 12px", margin: "10px 0", fontSize: 14.5, color: "var(--muted)", fontStyle: "italic" }}>{e.text}</div>;
   if (e.k === "note")
-    return <div style={{ ...mono, fontSize: 11, color: "var(--dim)", margin: "6px 0" }}>· {e.text}</div>;
+    return <div style={{ ...mono, fontSize: 12, color: "var(--dim)", margin: "6px 0" }}>· {e.text}</div>;
   if (e.k === "op")
     return (
       <div style={{ border: "1px solid var(--border)", borderLeft: "2px solid var(--sig)", borderRadius: 5, padding: "9px 13px", margin: "10px 0", background: "rgba(0,0,0,0.22)" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-          <span style={{ ...mono, fontSize: 12.5, color: "var(--sig)", fontWeight: 600 }}>{e.op}</span>
-          <span style={{ ...mono, fontSize: 11.5, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{JSON.stringify(e.args)}</span>
+          <span style={{ ...mono, fontSize: 14, color: "var(--sig)", fontWeight: 600 }}>{e.op}</span>
+          <span style={{ ...mono, fontSize: 12.5, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{JSON.stringify(e.args)}</span>
           <span style={{ flex: 1 }} />
-          <span style={{ ...mono, fontSize: 10.5, color: e.status === "done" ? "var(--high)" : "var(--med)" }}>{e.status === "done" ? "조회 완료" : "요청 중…"}</span>
+          <span style={{ ...mono, fontSize: 11.5, color: e.status === "done" ? "var(--high)" : "var(--med)" }}>{e.status === "done" ? "조회 완료" : "요청 중…"}</span>
         </div>
-        {e.result && <pre style={{ ...mono, fontSize: 11, color: "var(--text)", whiteSpace: "pre-wrap", margin: "8px 0 0", maxHeight: 150, overflowY: "auto", opacity: 0.85 }}>{JSON.stringify(e.result, null, 1).slice(0, 1200)}</pre>}
+        {e.result && <pre style={{ ...mono, fontSize: 12, color: "var(--text)", whiteSpace: "pre-wrap", margin: "8px 0 0", maxHeight: 150, overflowY: "auto", opacity: 0.85 }}>{JSON.stringify(e.result, null, 1).slice(0, 1200)}</pre>}
       </div>
     );
   if (e.k === "final") return <FinalCard out={e.out} rows={e.execRows} err={e.execErr} />;
@@ -339,31 +339,31 @@ function FinalCard({ out, rows, err }) {
   const tone = out.action === "sql" ? "var(--accent)" : out.action === "clarify" ? "var(--med)" : "var(--dim)";
   return (
     <div style={{ border: `1px solid ${tone}55`, borderLeft: `2px solid ${tone}`, borderRadius: 5, padding: "11px 14px", margin: "14px 0" }}>
-      <div style={{ ...mono, fontSize: 11, color: tone, letterSpacing: "0.06em", marginBottom: 7 }}>
+      <div style={{ ...mono, fontSize: 12, color: tone, letterSpacing: "0.06em", marginBottom: 7 }}>
         최종 액션 · {out.action.toUpperCase()} {out.confidence ? `· ${out.confidence}` : ""}
       </div>
-      {out.action === "sql" && <pre style={{ ...mono, fontSize: 12.5, whiteSpace: "pre-wrap", margin: 0, color: "var(--text)" }}>{out.sql}</pre>}
-      {out.action === "clarify" && (<div style={{ fontSize: 13.5 }}>{out.clarify_question}
-        {(out.options || []).map((o, i) => <span key={i} style={{ ...mono, fontSize: 11.5, border: "1px solid var(--border)", borderRadius: 4, padding: "1px 8px", marginLeft: 7 }}>{o}</span>)}</div>)}
-      {out.action === "cannot_answer" && <div style={{ fontSize: 13.5, color: "var(--muted)" }}>{out.reason}</div>}
+      {out.action === "sql" && <pre style={{ ...mono, fontSize: 14, whiteSpace: "pre-wrap", margin: 0, color: "var(--text)" }}>{out.sql}</pre>}
+      {out.action === "clarify" && (<div style={{ fontSize: 15 }}>{out.clarify_question}
+        {(out.options || []).map((o, i) => <span key={i} style={{ ...mono, fontSize: 12.5, border: "1px solid var(--border)", borderRadius: 4, padding: "1px 8px", marginLeft: 7 }}>{o}</span>)}</div>)}
+      {out.action === "cannot_answer" && <div style={{ fontSize: 15, color: "var(--muted)" }}>{out.reason}</div>}
       {(out.assumptions || []).length > 0 &&
-        <div style={{ ...mono, fontSize: 11.5, color: "var(--med)", marginTop: 7 }}>가정: {out.assumptions.join(" · ")}</div>}
-      {err && <div style={{ ...mono, fontSize: 11.5, color: "var(--low)", marginTop: 7 }}>실행 오류: {err}</div>}
+        <div style={{ ...mono, fontSize: 12.5, color: "var(--med)", marginTop: 7 }}>가정: {out.assumptions.join(" · ")}</div>}
+      {err && <div style={{ ...mono, fontSize: 12.5, color: "var(--low)", marginTop: 7 }}>실행 오류: {err}</div>}
       {rows && <ResultTable rows={rows} />}
     </div>
   );
 }
 
 function ResultTable({ rows }) {
-  if (!rows.length) return <div style={{ ...mono, fontSize: 11.5, color: "var(--dim)", marginTop: 8 }}>(0행)</div>;
+  if (!rows.length) return <div style={{ ...mono, fontSize: 12.5, color: "var(--dim)", marginTop: 8 }}>(0행)</div>;
   const cols = Object.keys(rows[0]); const view = rows.slice(0, 8);
   return (
     <div style={{ marginTop: 9, overflowX: "auto" }}>
-      <table style={{ ...mono, fontSize: 11.5, borderCollapse: "collapse" }}>
+      <table style={{ ...mono, fontSize: 12.5, borderCollapse: "collapse" }}>
         <thead><tr>{cols.map((c) => <th key={c} style={{ textAlign: "left", padding: "3px 12px 3px 0", color: "var(--muted)", borderBottom: "1px solid var(--border)" }}>{c}</th>)}</tr></thead>
         <tbody>{view.map((r, i) => <tr key={i}>{cols.map((c) => <td key={c} style={{ padding: "3px 12px 3px 0", color: "var(--text)" }}>{String(r[c])}</td>)}</tr>)}</tbody>
       </table>
-      {rows.length > 8 && <div style={{ ...mono, fontSize: 10.5, color: "var(--dim)", marginTop: 4 }}>… 총 {rows.length}행</div>}
+      {rows.length > 8 && <div style={{ ...mono, fontSize: 11.5, color: "var(--dim)", marginTop: 4 }}>… 총 {rows.length}행</div>}
     </div>
   );
 }
@@ -371,11 +371,11 @@ function ResultTable({ rows }) {
 function VerdictCard({ v, q }) {
   return (
     <div style={{ display: "flex", gap: 10, alignItems: "baseline", border: `1px solid ${VCOLOR[v.verdict]}44`, borderRadius: 5, padding: "9px 14px", margin: "10px 0" }}>
-      <span style={{ ...mono, fontSize: 13, fontWeight: 700, color: VCOLOR[v.verdict] }}>{VLABEL[v.verdict]}</span>
-      {v.flags.map((f) => <span key={f} style={{ ...mono, fontSize: 10.5, color: "var(--low)", border: "1px solid var(--low)55", borderRadius: 4, padding: "1px 7px" }}>{f}</span>)}
-      <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{v.detail}</span>
+      <span style={{ ...mono, fontSize: 14.5, fontWeight: 700, color: VCOLOR[v.verdict] }}>{VLABEL[v.verdict]}</span>
+      {v.flags.map((f) => <span key={f} style={{ ...mono, fontSize: 11.5, color: "var(--low)", border: "1px solid var(--low)55", borderRadius: 4, padding: "1px 7px" }}>{f}</span>)}
+      <span style={{ fontSize: 14, color: "var(--muted)" }}>{v.detail}</span>
       <span style={{ flex: 1 }} />
-      <span style={{ ...mono, fontSize: 10.5, color: "var(--dim)" }}>연산 {v.n_ops}회 · 적절성 {Math.round(v.ops_recall * 100)}%</span>
+      <span style={{ ...mono, fontSize: 11.5, color: "var(--dim)" }}>연산 {v.n_ops}회 · 적절성 {Math.round(v.ops_recall * 100)}%</span>
     </div>
   );
 }
@@ -383,9 +383,9 @@ function VerdictCard({ v, q }) {
 function Scoreboard({ agg, total }) {
   return (
     <div style={{ border: "1px solid var(--border)", borderRadius: 5, padding: "10px 12px", marginTop: 6 }}>
-      <div style={{ ...mono, fontSize: 11, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 7 }}>스코어보드 · 채점 {total}건</div>
+      <div style={{ ...mono, fontSize: 12, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 7 }}>스코어보드 · 채점 {total}건</div>
       {Object.entries(agg).map(([cat, b]) => (
-        <div key={cat} style={{ display: "flex", gap: 8, ...mono, fontSize: 11.5, padding: "2px 0", alignItems: "baseline" }}>
+        <div key={cat} style={{ display: "flex", gap: 8, ...mono, fontSize: 12.5, padding: "2px 0", alignItems: "baseline" }}>
           <span style={{ width: 78, color: "var(--text)" }}>{CATL[cat] || cat}</span>
           <span style={{ color: "var(--high)" }}>정답 {b.correct}</span>
           <span style={{ color: "var(--med)" }}>부분 {b.partial}</span>
@@ -404,10 +404,10 @@ function KeyBox() {
   const [k, setK] = nUseState("");
   return (
     <div style={{ border: "1px dashed var(--border)", borderRadius: 5, padding: "8px 10px", marginBottom: 10 }}>
-      <div style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 5 }}>로컬 실행 — API 키를 넣으면 localStorage에 저장됩니다 (claude.ai 안에서는 불필요)</div>
+      <div style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 5 }}>로컬 실행 — API 키를 넣으면 localStorage에 저장됩니다 (claude.ai 안에서는 불필요)</div>
       <div style={{ display: "flex", gap: 6 }}>
         <input value={k} onChange={(e) => setK(e.target.value)} placeholder="sk-ant-…" type="password"
-          style={{ ...mono, flex: 1, fontSize: 11.5, background: "rgba(0,0,0,0.3)", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text)", padding: "4px 8px" }} />
+          style={{ ...mono, flex: 1, fontSize: 12.5, background: "rgba(0,0,0,0.3)", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text)", padding: "4px 8px" }} />
         <Btn on={k.length > 10} color="var(--accent)" onClick={() => { localStorage.setItem("anthropic_key", k); location.reload(); }}>저장</Btn>
       </div>
     </div>
@@ -416,13 +416,13 @@ function KeyBox() {
 
 function Btn({ on, color, onClick, children }) {
   return (
-    <button onClick={on ? onClick : undefined} style={{ ...mono, fontSize: 12, padding: "5px 12px", borderRadius: 4,
+    <button onClick={on ? onClick : undefined} style={{ ...mono, fontSize: 13, padding: "5px 12px", borderRadius: 4,
       cursor: on ? "pointer" : "default", opacity: on ? 1 : 0.4,
       border: `1px solid ${color}66`, background: color + "18", color }}>{children}</button>
   );
 }
 function Center({ children }) {
-  return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", color: "var(--muted)", fontSize: 13.5 }}>{children}</div>;
+  return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", color: "var(--muted)", fontSize: 15 }}>{children}</div>;
 }
 
 window.NLScreen = NLScreen;
