@@ -66,7 +66,7 @@ function DashboardView({ db, L, Q, counts, idx, nav }) {
           <Stat label="행" value={totalRows.toLocaleString()} />
           <Stat label="Term" value={L.terms.length} sub={`개념 ${concept.length} · distractor ${distractor.length}`} />
           <Stat label="메트릭" value={L.metrics.length} sub="정본 지표" />
-          <Stat label="코드체계" value={L.metrics ? Object.keys(L.codedict).length : 0} sub="코드사전" />
+          <div onClick={() => nav && nav("codedict")} style={{ cursor: "pointer" }}><Stat label="코드체계" value={Object.keys(L.codedict).length} sub="코드사전 →" /></div>
         </div>
       </Sec>
 

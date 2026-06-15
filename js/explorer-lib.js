@@ -39,7 +39,24 @@
     // 패밀리 그룹 (사람용 감사 뷰 — 에이전트 연산에는 계속 비노출)
     const families = {};
     for (const t of L.terms) if (t.family) (families[t.family] = families[t.family] || []).push(t.name);
-    return { colTerms, termByName, metricTerms, collisions, surfaceCount, families };
+    // 코드사전 인덱스 — 등재(값↔라벨)와 미등재(결손) 구분
+    const codedict = L.codedict || {};
+    const codeCols = L.columns.filter((c) => /_CD$/.test(c.id.split(".")[1]));
+    const codeEntries = [];
+    for (const c of codeCols) {
+      const dict = codedict[c.id];
+      const colName = c.id.split(".")[1];
+      // 결손 종류: 식별자성(PRDT/ZIP) vs 의도적 결손
+      const isIdentifier = /(PRDT_CD|ZIP_CD)$/.test(colName);
+      codeEntries.push({
+        id: c.id, table: c.table, col: colName,
+        domain: (L.tables.find((t) => t.name === c.table) || {}).domain,
+        dict: dict || null,
+        status: dict ? "registered" : (isIdentifier ? "identifier" : "missing"),
+        desc: (c.description && c.description.text || "").split(" 값:")[0],
+      });
+    }
+    return { colTerms, termByName, metricTerms, collisions, surfaceCount, families, codeEntries };
   }
 
   // 통합 검색 — kind: term | column | table | metric | question

@@ -20,7 +20,7 @@ const ECAT = {
   boundary:    { label: "경계 결손",   desc: "레이어에 일부러 빠뜨린 정보 — 모르면 모른다고 해야 하고, 지어내면 안 된다" },
   join:        { label: "조인",        desc: "두 테이블을 이어야 풀리는 질문 — 경로와 grain을 함께 검증한다" },
 };
-const VIEWS = [["dashboard", "대시보드"], ["table", "테이블"], ["term", "Term"], ["metric", "메트릭"], ["collision", "충돌 지도"], ["question", "질문셋"]];
+const VIEWS = [["dashboard", "대시보드"], ["table", "테이블"], ["term", "Term"], ["metric", "메트릭"], ["codedict", "코드사전"], ["collision", "충돌 지도"], ["question", "질문셋"]];
 
 function ExplorerScreen() {
   const [ready, setReady] = eUseState(null);
@@ -78,6 +78,7 @@ function ExplorerScreen() {
       {route.v === "table" && <TableView {...props} />}
       {route.v === "term" && <TermView {...props} />}
       {route.v === "metric" && <MetricView {...props} />}
+      {route.v === "codedict" && <CodedictView {...props} />}
       {route.v === "collision" && <CollisionView {...props} />}
       {route.v === "question" && <QuestionView {...props} />}
     </div>
@@ -471,6 +472,91 @@ function MetricView({ L, idx, route, nav }) {
       </Section>
     </div>);
   return <TwoPane left={left} right={right} />;
+}
+
+// ============ 코드사전 뷰 ============
+function CodedictView({ idx, route, nav }) {
+  const sel = route.sel;
+  const entries = idx.codeEntries;
+  const registered = entries.filter((e) => e.status === "registered");
+  const identifier = entries.filter((e) => e.status === "identifier");
+  const missing = entries.filter((e) => e.status === "missing");
+  const DOMS = ["CUSTOMER", "LOAN", "CARD", "DEPOSIT", "RISK"];
+
+  const EntryCard = ({ e }) => {
+    const isSel = sel === e.id;
+    return (
+      <div style={{ border: `1px solid ${isSel ? "var(--sig)" : "var(--border)"}`, borderRadius: 6, padding: "11px 14px",
+                    background: "rgba(255,255,255,0.015)" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+          <span style={{ ...eMono, fontSize: 12.5, color: "var(--text)" }}>{e.col}</span>
+          <span style={{ ...eMono, fontSize: 10, color: DOM_COLOR[e.domain] || "var(--dim)" }}>{e.domain}</span>
+          <span style={{ flex: 1 }} />
+          <span onClick={() => nav("table", e.table, e.id)} style={{ ...eMono, fontSize: 10, color: "var(--dim)", cursor: "pointer" }}>{e.table} →</span>
+        </div>
+        {e.desc && <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 9, lineHeight: 1.5 }}>{e.desc}</div>}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          {Object.entries(e.dict).map(([code, label]) => (
+            <span key={code} style={{ ...eMono, fontSize: 11, border: "1px solid var(--border)", borderRadius: 4, padding: "2px 8px" }}>
+              <span style={{ color: "var(--sig)" }}>{code}</span>
+              <span style={{ color: "var(--dim)", margin: "0 4px" }}>→</span>
+              <span style={{ color: "var(--text)" }}>{label}</span>
+            </span>))}
+        </div>
+      </div>);
+  };
+
+  return (
+    <div style={{ padding: "18px 26px", maxWidth: 1040 }}>
+      <div style={{ border: "1px solid var(--border)", borderRadius: 7, padding: "14px 18px", marginBottom: 24,
+                    borderLeft: "3px solid var(--sig)" }}>
+        <div style={{ ...eMono, fontSize: 12, color: "var(--sig)", marginBottom: 8 }}>코드사전이란?</div>
+        <div style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.75 }}>
+          코드성 컬럼(<span style={{ ...eMono, fontSize: 12 }}>_CD</span>로 끝나는 컬럼)에 저장된 <b style={{ color: "var(--text)", fontWeight: 500 }}>코드값과 그 의미의 매핑</b>이다.
+          예를 들어 <span style={{ ...eMono, fontSize: 12, color: "var(--sig)" }}>REGION_CD='SE'</span>가 "서울"을 뜻한다는 정보로,
+          에이전트가 "서울 지역" 같은 자연어를 올바른 코드값으로 변환(<span style={{ ...eMono, fontSize: 12 }}>resolve_code</span>)할 때 쓰인다.
+          프로그래밍 코드가 아니라 <b style={{ color: "var(--text)", fontWeight: 500 }}>값 사전</b>이다.
+        </div>
+        <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.75, marginTop: 8 }}>
+          사전이 <b style={{ color: "var(--low)", fontWeight: 500 }}>비어 있는 컬럼</b>에서는 에이전트가 코드값을 추측하면 안 되고(환각),
+          확인을 요청하거나 부재를 보고해야 한다 — 경계 결손 검증(B01·B02)의 핵심 자원이다.
+        </div>
+      </div>
+
+      <Section title={`등재된 코드사전 — ${registered.length}개 (값↔라벨 매핑 보유)`}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))", gap: 12 }}>
+          {DOMS.flatMap((d) => registered.filter((e) => e.domain === d)).map((e) => <EntryCard key={e.id} e={e} />)}
+        </div>
+      </Section>
+
+      <Section title={`의도적 결손 — ${missing.length}개 (경계 검증용 의도적 공백)`}>
+        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10, lineHeight: 1.6 }}>
+          코드값은 데이터에 존재하지만 사전이 비어 있다. 에이전트가 의미를 추측하면 환각으로 잡힌다.
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {missing.map((e) => (
+            <div key={e.id} onClick={() => nav("table", e.table, e.id)}
+              style={{ border: "1px solid var(--low)44", borderRadius: 6, padding: "9px 13px", cursor: "pointer",
+                       background: "var(--low)0c" }}>
+              <div style={{ ...eMono, fontSize: 12, color: "var(--low)" }}>{e.col}</div>
+              <div style={{ ...eMono, fontSize: 10, color: "var(--dim)", marginTop: 2 }}>{e.table} · {e.domain}</div>
+            </div>))}
+        </div>
+      </Section>
+
+      <Section title={`식별자성 코드 — ${identifier.length}개 (사전화 대상 아님)`}>
+        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10, lineHeight: 1.6 }}>
+          상품코드·우편번호처럼 값이 개방적이라 고정 사전을 두지 않는다. 결손이 아니라 본래 사전화 대상이 아닌 컬럼.
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {identifier.map((e) => (
+            <span key={e.id} onClick={() => nav("table", e.table, e.id)}
+              style={{ ...eMono, fontSize: 11, color: "var(--dim)", border: "1px solid var(--border)", borderRadius: 4,
+                       padding: "3px 9px", cursor: "pointer" }}>{e.col}</span>))}
+        </div>
+      </Section>
+    </div>
+  );
 }
 
 // ============ ④ 충돌 지도 ============
