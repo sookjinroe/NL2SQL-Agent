@@ -16,7 +16,7 @@ function AppShell() {
       <div style={{ display: "flex", gap: 4, padding: "10px 16px 0", borderBottom: "1px solid var(--border)", alignItems: "flex-end" }}>
         {tabs.map(([k, label]) => (
           <div key={k} onClick={() => setTab(k)}
-            style={{ fontFamily: "var(--mono)", fontSize: 14, padding: "7px 16px", cursor: "pointer",
+            style={{ fontFamily: "var(--mono)", fontSize: 15, padding: "7px 16px", cursor: "pointer",
                      color: tab === k ? "var(--text)" : "var(--dim)",
                      borderBottom: tab === k ? "2px solid var(--accent)" : "2px solid transparent" }}>
             {label}
@@ -24,11 +24,11 @@ function AppShell() {
         <div style={{ flex: 1 }} />
         <select value={model}
           onChange={(e) => { window.LiveAPI.setModel(e.target.value); setModelState(e.target.value); }}
-          style={{ fontFamily: "var(--mono)", fontSize: 12.5, background: "rgba(0,0,0,0.3)", color: "var(--text)",
+          style={{ fontFamily: "var(--mono)", fontSize: 14, background: "rgba(0,0,0,0.3)", color: "var(--text)",
                    border: "1px solid var(--border)", borderRadius: 4, padding: "4px 8px", marginBottom: 7 }}>
           {window.LiveAPI.MODELS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
         </select>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--dim)", paddingBottom: 10, marginLeft: 12 }}>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--dim)", paddingBottom: 10, marginLeft: 12 }}>
           corpus-v1
         </div>
       </div>
