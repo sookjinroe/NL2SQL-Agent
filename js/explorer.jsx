@@ -247,7 +247,7 @@ function TableDetail({ db, L, idx, name, counts, hl, nav }) {
                     onClick={c.fk ? () => nav("table", c.fk.split(".")[0]) : undefined}>
                   {c.pk ? "PK" : c.fk ? "FK→" + c.fk.split(".")[0] : ""}</td>
                 <td style={{ padding: "4px 10px 4px 0", color: "var(--muted)", fontFamily: "var(--sans)", fontSize: 14.5 }}>
-                  {c.description.text.split(" 값:")[0]}
+                  {c.description.text}
                   {c.description.source === "auto" && <span style={{ ...eMono, fontSize: 11.5, color: "var(--dim)" }}> (auto)</span>}
                 </td>
                 <td style={{ padding: "4px 0" }}>
