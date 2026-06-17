@@ -8,9 +8,9 @@
 
 const { useState: aUseState } = React;
 function AppShell() {
-  const [tab, setTab] = aUseState("agent");
+  const [tab, setTab] = aUseState("intro");
   const [model, setModelState] = aUseState(window.LiveAPI.getModel());
-  const tabs = [["agent", "NL 에이전트"], ["explorer", "데이터 탐색"]];
+  const tabs = [["intro", "소개"], ["agent", "NL 에이전트"], ["explorer", "데이터 탐색"]];
   return (
     <div>
       <div style={{ display: "flex", gap: 4, padding: "10px 16px 0", borderBottom: "1px solid var(--border)", alignItems: "flex-end" }}>
@@ -32,6 +32,7 @@ function AppShell() {
           corpus-v1
         </div>
       </div>
+      {tab === "intro" && <window.NLIntro />}
       <div style={{ display: tab === "agent" ? "block" : "none" }}><window.NLScreen /></div>
       {tab === "explorer" && <window.ExplorerScreen />}
     </div>
