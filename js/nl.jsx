@@ -143,7 +143,7 @@ function NLScreen() {
       question: q.text,
       complete: (s, u) => window.LiveAPI.complete(s, u, { onRetry: (a, d) => setNote(`재시도 ${a}회…`) }),
       layerCall: window.LayerOps.call,
-      sysPrompt: window.NLData.currentPrompt(), userPrompt: window.NLData.userPrompt,
+      sysPrompt: window.NLData.NL_SYS, userPrompt: window.NLData.userPrompt,
       maxOps: window.NLData.MAX_OPS, onEvent,
     });
     setNote(null);
@@ -200,7 +200,6 @@ function NLScreen() {
     const snap = {
       version: 1,
       model: window.LiveAPI.getModel(),
-      prompt_id: window.NLData.getPromptId(),
       created: new Date().toISOString(),
       results: Object.fromEntries(
         Q.filter((q) => results[q.id] && results[q.id].events)
