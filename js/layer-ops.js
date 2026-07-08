@@ -66,8 +66,11 @@
     const t = L._termByName[term] ||
       L.terms.find((x) => (x.synonyms || []).includes(term));
     if (!t) return { error: `Term '${term}' 없음` };
-    return { name: t.name, domain: t.domain, definition: t.definition,
-             synonyms: t.synonyms, valid_values: t.valid_values, links: t.links };
+    const out = { name: t.name, domain: t.domain, definition: t.definition, synonyms: t.synonyms };
+    if (t.valid_values !== undefined) out.valid_values = t.valid_values;
+    if (t.links !== undefined) out.links = t.links;         // mock 레이어 (role 체계)
+    if (t.assets !== undefined) out.assets = t.assets;      // fineract 레이어 (미니멀 구조)
+    return out;
   }
 
   // ③ resolve_code — (컬럼, 표현) → 코드 리터럴. 사전 부재 시 명시적 부재 응답.
@@ -85,8 +88,15 @@
   function get_column({ id }) {
     const c = L._colById[id];
     if (!c) return { error: `컬럼 '${id}' 없음` };
-    return { id: c.id, table: c.table, type: c.type, nullable: c.nullable, pk: c.pk, fk: c.fk,
-             description: c.description, classification: c.classification };
+    const out = { id: c.id, table: c.table, type: c.type, nullable: c.nullable, pk: c.pk, fk: c.fk,
+                  description: c.description };
+    if (c.classification !== undefined) out.classification = c.classification;
+    // Render v3 산출 필드 (fineract 레이어)
+    if (c.capability !== undefined) out.capability = c.capability;
+    if (c.format !== undefined) out.format = c.format;
+    if (c.aggregation !== undefined) out.aggregation = c.aggregation;
+    if (c.codedict_available !== undefined) out.codedict_available = c.codedict_available;
+    return out;
   }
 
   // ⑤ get_table

@@ -101,19 +101,23 @@ function NLScreen() {
   const abortRef = nUseRef(false);
   const followRef = nUseRef(true);  // 전체 실행 중 진행 문항 자동 추적 (사용자 수동 선택 시 false)
   const runningRef = nUseRef(null);  // 현재 실행 중 문항 id
-  const Q = window.QUESTIONS;
+  const isFree = window.Dataset.isFree();
+  const [freeQs, setFreeQs] = nUseState([]);   // fineract 자유 질의 목록
+  const [freeInput, setFreeInput] = nUseState("");
+  const Q = isFree ? freeQs : window.Dataset.questions();
 
   nUseEffect(() => { (async () => {
     try {
       if (window.LiveAPI.ready) await window.LiveAPI.ready;
-      if (window.__DB) { dbRef.current = window.__DB; }
+      const dbKey = "__DB_" + window.Dataset.get();
+      if (window[dbKey]) { dbRef.current = window[dbKey]; }
       else {
         const SQL = await initSqlJs({ locateFile: (f) => "data/" + f });
-        const buf = await (await fetch("data/world.db")).arrayBuffer();
+        const buf = await (await fetch(window.Dataset.dbPath())).arrayBuffer();
         dbRef.current = new SQL.Database(new Uint8Array(buf));
-        window.__DB = dbRef.current;
+        window[dbKey] = dbRef.current;
       }
-      window.LayerOps.init(window.LAYER);
+      window.LayerOps.init(window.Dataset.layer());
       setReady("ok");
     } catch (e) { setReady("err: " + (e.message || e)); }
   })(); }, []);
@@ -154,7 +158,9 @@ function NLScreen() {
       try { execRows = window.Scorer.runSql(dbRef.current, out.final.sql); }
       catch (e) { execErr = String(e.message || e); }
     }
-    const verdict = window.Scorer.score(dbRef.current, q, out.final, { ops: out.opsTrace });
+    const verdict = q.golden
+      ? window.Scorer.score(dbRef.current, q, out.final, { ops: out.opsTrace })
+      : { id: q.id, cat: q.cat || "free", verdict: "n/a", flags: [], detail: "골든 없음 (탐색 실행)", ops_recall: null, n_ops: out.opsTrace.length };
     push({ k: "final", out: out.final, execRows, execErr });
     push({ k: "verdict", v: verdict });
     setRes(q.id, { status: "done", final: out.final, verdict, execRows, execErr, opsTrace: out.opsTrace });
@@ -250,15 +256,33 @@ function NLScreen() {
         <div style={{ fontSize: 14.5, color: "var(--muted)", marginBottom: 14 }}>
           충분히 채워진 시맨틱 레이어가 주어졌을 때, 레이어를 소비하는 에이전트의 로직이 성립하는가
         </div>
+        {isFree && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 13.5, color: "var(--muted)", marginBottom: 6 }}>
+              Fineract 탐색 모드 — 골든 없음. 자유 질의로 에이전트의 레이어 소비를 관찰.
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input value={freeInput} onChange={(e) => setFreeInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && freeInput.trim() && !busy) {
+                  const q = { id: "F" + String(freeQs.length + 1).padStart(2, "0"), cat: "free", text: freeInput.trim(), mode: "free" };
+                  setFreeQs((p) => [...p, q]); setFreeInput("");
+                  setTimeout(() => runOne(q, true), 50);
+                }}}
+                placeholder="질문 입력 후 Enter (예: 활성 고객이 몇 명이야?)"
+                style={{ flex: 1, padding: "8px 10px", background: "var(--panel)", border: "1px solid var(--border)",
+                         borderRadius: 6, color: "var(--text)", fontSize: 14 }} />
+            </div>
+          </div>
+        )}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-          <Btn on={!busy} color="var(--accent)" onClick={runAll}>전체 실행</Btn>
+          <Btn on={!busy && Q.length > 0} color="var(--accent)" onClick={runAll}>전체 실행</Btn>
           <Btn on={busy} color="var(--low)" onClick={() => (abortRef.current = true)}>중단</Btn>
-          <Btn on={!busy} color="var(--dim)" onClick={harnessSelfCheck}>하니스 자가검증</Btn>
+          {!isFree && <Btn on={!busy} color="var(--dim)" onClick={harnessSelfCheck}>하니스 자가검증</Btn>}
           <Btn on={done.length > 0} color="var(--dim)" onClick={downloadResults}>결과 JSONL</Btn>
           <Btn on={done.length > 0} color="var(--sig)" onClick={saveSnapshot}>스냅샷 저장</Btn>
-          <Btn on={!!window.NLSnapshot} color="var(--sig)" onClick={() => {
+          {!isFree && <Btn on={!!window.NLSnapshot} color="var(--sig)" onClick={() => {
             try { applySnapshot(window.NLSnapshot); } catch (e) { setNote("스냅샷 로드 실패: " + (e.message||e)); setTimeout(()=>setNote(null),4000); }
-          }}>스냅샷 불러오기</Btn>
+          }}>스냅샷 불러오기</Btn>}
         </div>
         {selfCheck && <div style={{ ...mono, fontSize: 14.5, color: "var(--sig)", marginBottom: 8 }}>{selfCheck}</div>}
         {note && <div style={{ ...mono, fontSize: 14, color: "var(--med)", marginBottom: 8 }}>{note}</div>}

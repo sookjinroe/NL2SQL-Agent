@@ -28,7 +28,7 @@ function ExplorerScreen() {
   const [counts, setCounts] = eUseState({});
   const dbRef = eUseRef(null);
   const idxRef = eUseRef(null);
-  const L = window.LAYER, Q = window.QUESTIONS;
+  const L = window.Dataset.layer(), Q = window.Dataset.questions();
 
   function nav(v, sel, hl) {
     setRoute({ v, sel: sel || null, hl: hl || null });
@@ -40,7 +40,7 @@ function ExplorerScreen() {
       if (window.__DB) dbRef.current = window.__DB;
       else {
         const SQL = await initSqlJs({ locateFile: (f) => "data/" + f });
-        const buf = await (await fetch("data/world.db")).arrayBuffer();
+        const buf = await (await fetch(window.Dataset.dbPath())).arrayBuffer();
         dbRef.current = new SQL.Database(new Uint8Array(buf));
         window.__DB = dbRef.current;
       }
