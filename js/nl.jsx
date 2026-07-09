@@ -116,7 +116,14 @@ function NLScreen() {
   const isFree = window.Dataset.isFree();
   const [freeQs, setFreeQs] = nUseState([]);   // fineract 자유 질의 목록 (골든셋과 병존)
   const [freeInput, setFreeInput] = nUseState("");
-  const goldens = window.Dataset.questions();
+  const [coreOnly, setCoreOnly] = nUseState(false);
+  const [catFilter, setCatFilter] = nUseState({});   // cat → true면 숨김
+  const goldensAll = window.Dataset.questions();
+  const goldens = goldensAll.filter((q) => {
+    if (coreOnly && !q.core) return false;
+    if (catFilter[q.cat]) return false;
+    return true;
+  });
   const Q = isFree ? [...goldens, ...freeQs] : goldens;
 
   nUseEffect(() => { (async () => {
@@ -269,10 +276,36 @@ function NLScreen() {
         <div style={{ fontSize: 14.5, color: "var(--muted)", marginBottom: 14 }}>
           충분히 채워진 시맨틱 레이어가 주어졌을 때, 레이어를 소비하는 에이전트의 로직이 성립하는가
         </div>
+        {/* 필터 바 */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 10,
+                      padding: "8px 10px", background: "rgba(0,0,0,0.15)", border: "1px solid var(--border)", borderRadius: 4 }}>
+          <span style={{ fontSize: 12.5, color: "var(--muted)" }}>필터:</span>
+          <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+            <input type="checkbox" checked={coreOnly} onChange={(e) => setCoreOnly(e.target.checked)} />
+            핵심({goldensAll.filter((q) => q.core).length})
+          </label>
+          <span style={{ color: "var(--dim)" }}>|</span>
+          {Array.from(new Set(goldensAll.map((q) => q.cat))).sort((a, b) => {
+            const O = { normal:1, family:2, granularity:3, boundary:4, join:5,
+                        metric:1, join_grain:2, codedict:3, time_format:4, review:5, conceptual:6, free:99 };
+            return (O[a]||50) - (O[b]||50);
+          }).map((cat) => {
+            const cnt = goldensAll.filter((q) => q.cat === cat).length;
+            const hidden = catFilter[cat];
+            return (
+              <label key={cat} style={{ fontSize: 12.5, display: "flex", alignItems: "center", gap: 3, cursor: "pointer",
+                                        opacity: hidden ? 0.4 : 1 }}>
+                <input type="checkbox" checked={!hidden} onChange={(e) => setCatFilter({ ...catFilter, [cat]: !e.target.checked })} />
+                {CATL[cat] || cat}({cnt})
+              </label>
+            );
+          })}
+          <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--muted)" }}>표시: {goldens.length}</span>
+        </div>
         {isFree && (
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 13.5, color: "var(--muted)", marginBottom: 6 }}>
-              Fineract 재료 표적 골든 {goldens.length}문항 + 자유 질의 병존. 질문 추가 시 F## ID 부여.
+              Fineract 재료 표적 골든 + 자유 질의 병존. 질문 추가 시 F## ID 부여.
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <input value={freeInput} onChange={(e) => setFreeInput(e.target.value)}
@@ -294,9 +327,31 @@ function NLScreen() {
           {!isFree && <Btn on={!busy} color="var(--dim)" onClick={harnessSelfCheck}>하니스 자가검증</Btn>}
           <Btn on={done.length > 0} color="var(--dim)" onClick={downloadResults}>결과 JSONL</Btn>
           <Btn on={done.length > 0} color="var(--sig)" onClick={saveSnapshot}>스냅샷 저장</Btn>
-          {!isFree && <Btn on={!!window.NLSnapshot} color="var(--sig)" onClick={() => {
+          {window.NLSnapshot && <Btn on={true} color="var(--sig)" onClick={() => {
             try { applySnapshot(window.NLSnapshot); } catch (e) { setNote("스냅샷 로드 실패: " + (e.message||e)); setTimeout(()=>setNote(null),4000); }
-          }}>스냅샷 불러오기</Btn>}
+          }}>기본 스냅샷</Btn>}
+          <label style={{ ...mono, fontSize: 13, background: "var(--sig)22", color: "var(--sig)",
+                          border: "1px solid var(--sig)", borderRadius: 4, padding: "6px 12px", cursor: "pointer" }}>
+            📁 파일 로드
+            <input type="file" accept=".json" style={{ display: "none" }} onChange={(e) => {
+              const f = e.target.files && e.target.files[0];
+              if (!f) return;
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                try {
+                  const snap = JSON.parse(ev.target.result);
+                  applySnapshot(snap);
+                  setNote("스냅샷 로드 완료: " + f.name);
+                  setTimeout(() => setNote(null), 3000);
+                } catch (err) {
+                  setNote("파일 파싱 실패: " + (err.message || err));
+                  setTimeout(() => setNote(null), 4000);
+                }
+                e.target.value = "";
+              };
+              reader.readAsText(f);
+            }} />
+          </label>
         </div>
         {selfCheck && <div style={{ ...mono, fontSize: 14.5, color: "var(--sig)", marginBottom: 8 }}>{selfCheck}</div>}
         {note && <div style={{ ...mono, fontSize: 14, color: "var(--med)", marginBottom: 8 }}>{note}</div>}
@@ -304,6 +359,8 @@ function NLScreen() {
 
         {agg && <Scoreboard agg={agg} total={done.length} />}
 
+        <div style={{ maxHeight: "calc(100vh - 340px)", overflowY: "auto", paddingRight: 4,
+                       border: "1px solid var(--border)", borderRadius: 4, padding: "6px 10px" }}>
         {Array.from(new Set(Q.map((q) => q.cat))).sort((a, b) => {
           const O = { normal: 1, family: 2, granularity: 3, boundary: 4, join: 5,
                       metric: 1, join_grain: 2, codedict: 3, time_format: 4, review: 5, conceptual: 6, free: 99 };
@@ -319,6 +376,7 @@ function NLScreen() {
                 onRun={() => { if (!busy) runOne(q, true); }} />))}
           </div>
         ))}
+        </div>
       </div>
 
       {/* ---- 우: 트레이스(60%) + 질문 상세(40%) ---- */}
