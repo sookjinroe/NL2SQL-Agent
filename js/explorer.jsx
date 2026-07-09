@@ -637,6 +637,9 @@ function CollisionView({ idx, route, nav }) {
 
 // ============ ⑤ 질문셋 뷰 ============
 function QuestionView({ db, Q, route, nav }) {
+  if (!Q || Q.length === 0) {
+    return <ECenter>골든 질문 세트가 없는 데이터셋입니다 (Fineract 탐색 모드). NL 탭에서 자유 질의로 관찰하세요.</ECenter>;
+  }
   const sel = route.sel || Q[0].id;
   const cats = ["normal", "family", "granularity", "boundary", "join"];
   const left = cats.map((cat) => (
@@ -726,7 +729,7 @@ function MarkerChip({ m, small }) {
 }
 
 function QDetail({ db, q }) {
-  const MODE = { sql: ["단일 골든", "var(--high)"], clarify: ["모호 — D8 3단 채점", "var(--med)"], missing: ["의도된 결손", "var(--low)"] };
+  const MODE = { sql: ["단일 골든", "var(--high)"], clarify: ["모호 — D8 3단 채점", "var(--med)"], missing: ["의도된 결손", "var(--low)"], free: ["자유 질의 (탐색)", "var(--sig)"] };
   const cp = q.checkpoint || {};
   const markers = cp.markers || [];
   const ECAT_LOCAL = typeof ECAT !== "undefined" ? ECAT : {};
@@ -742,7 +745,7 @@ function QDetail({ db, q }) {
       </div>
       {/* 마커 + mode 칩 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
-        <Chip color={MODE[q.mode][1]}>{MODE[q.mode][0]}</Chip>
+        {MODE[q.mode] && <Chip color={MODE[q.mode][1]}>{MODE[q.mode][0]}</Chip>}
         {markers.map((m) => <MarkerChip key={m} m={m} small={false} />)}
       </div>
       {/* 체크포인트 내용 — 헤더 레이블 없이 바로 행 */}
