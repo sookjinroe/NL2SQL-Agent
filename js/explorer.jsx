@@ -488,7 +488,7 @@ function CodedictView({ idx, route, nav }) {
   const registered = entries.filter((e) => e.status === "registered");
   const identifier = entries.filter((e) => e.status === "identifier");
   const missing = entries.filter((e) => e.status === "missing");
-  const DOMS = ["CUSTOMER", "LOAN", "CARD", "DEPOSIT", "RISK"];
+  const DOMS = Array.from(new Set(entries.map((e) => e.domain).filter(Boolean)));
 
   const EntryCard = ({ e }) => {
     const isSel = sel === e.id;

@@ -40,19 +40,35 @@
     const families = {};
     for (const t of L.terms) if (t.family) (families[t.family] = families[t.family] || []).push(t.name);
     // 코드사전 인덱스 — 등재(값↔라벨)와 미등재(결손) 구분
+    // mock(_CD)·fineract(_enum·_cv_id) 양쪽 패턴 지원. registered는 실제 codedict 키 기준.
     const codedict = L.codedict || {};
-    const codeCols = L.columns.filter((c) => /_CD$/.test(c.id.split(".")[1]));
+    const CODE_NAME_RE = /(_CD|_enum|_cv_id)$/;
+    const IDENT_RE = /(PRDT_CD|ZIP_CD)$/;
+    const colById = {}; L.columns.forEach((c) => (colById[c.id] = c));
     const codeEntries = [];
-    for (const c of codeCols) {
-      const dict = codedict[c.id];
+    // 1) 실제 값 사전 있는 컬럼 (registered) - codedict 키 기준
+    for (const cid of Object.keys(codedict)) {
+      const c = colById[cid];
+      if (!c) continue;
+      const colName = cid.split(".")[1];
+      codeEntries.push({
+        id: cid, table: c.table, col: colName,
+        domain: c.domain || (L.tables.find((t) => t.name === c.table) || {}).domain,
+        dict: codedict[cid],
+        status: "registered",
+        desc: (c.description && c.description.text || "").split(" 값:")[0],
+      });
+    }
+    // 2) 코드성 이름이지만 사전 없는 컬럼 (missing/identifier)
+    for (const c of L.columns) {
+      if (codedict[c.id]) continue; // 이미 registered
       const colName = c.id.split(".")[1];
-      // 결손 종류: 식별자성(PRDT/ZIP) vs 의도적 결손
-      const isIdentifier = /(PRDT_CD|ZIP_CD)$/.test(colName);
+      if (!CODE_NAME_RE.test(colName)) continue;
       codeEntries.push({
         id: c.id, table: c.table, col: colName,
-        domain: (L.tables.find((t) => t.name === c.table) || {}).domain,
-        dict: dict || null,
-        status: dict ? "registered" : (isIdentifier ? "identifier" : "missing"),
+        domain: c.domain || (L.tables.find((t) => t.name === c.table) || {}).domain,
+        dict: null,
+        status: IDENT_RE.test(colName) ? "identifier" : "missing",
         desc: (c.description && c.description.text || "").split(" 값:")[0],
       });
     }
