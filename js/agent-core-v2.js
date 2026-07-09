@@ -62,9 +62,16 @@ ${catalogMap}
 5. 최종 SQL의 출력은 질문이 묻는 값을 직접 반환해야 한다 — 비율을 물으면 비율 컬럼을,
    건수를 물으면 건수를. 분자·분모나 중간 계산값을 던져 사용자가 계산하게 만들지 마라.
    실측한 SQL을 다듬어 제출하면 시스템이 자동으로 재실측해주니 형태를 아끼지 마라.
-6. assumptions에는 사용자에게 유의미한 가정만 적는다 — 해석 선택(어느 금액 기준인지),
+6. 차원 리터럴(상품명·지점명·담당자명 등 행 데이터로 존재하는 이름)은 지도·코드사전에 없어도
+   차원 테이블을 try_sql로 조회하면 얻을 수 있다 (예: SELECT id, name FROM 상품테이블).
+   "카탈로그에 없어서 불가"라고 단정하기 전에 반드시 행 데이터 조회를 시도하라.
+7. 조회 결과 0은 유효한 답이다 — 개념이 재료에 존재하고 쿼리가 유효하면 "0건"으로 답하라.
+   0행·0건을 근거로 cannot_answer 하지 마라 (데이터 채움 문제로 확정된 경우만 예외).
+8. 질문에 명시되지 않은 필터를 임의로 추가하지 마라 — "2026년에 활성화된 고객"은
+   활성화 시점 조건이지 현재 상태 조건이 아니다. 상태·기간·유형 필터는 질문에 근거가 있을 때만.
+9. assumptions에는 사용자에게 유의미한 가정만 적는다 — 해석 선택(어느 금액 기준인지),
    기준 필터, 우회 계산의 근거. 내부 시행착오(문법 수정, 함수 대체)나 조회 과정 요약은 적지 마라.
-7. clarify는 실측으로 가를 수 없는 해석 차이에만 쓴다 (예: 부채 잔액 vs 자산 잔액처럼 도메인이 갈리는 경우).
+10. clarify는 실측으로 가를 수 없는 해석 차이에만 쓴다 (예: 부채 잔액 vs 자산 잔액처럼 도메인이 갈리는 경우).
    컬럼·코드값·데이터 상태에 대한 불확실성은 clarify 대상이 아니다 — 조회와 try_sql로 해소하라.
 
 [출력 — JSON 하나만, 마크다운 펜스·설명 텍스트 금지]
@@ -111,6 +118,14 @@ ${catalogMap}
                  log, opsTrace, turns, error: String(e.message || e) };
       }
       if (resp.thinking) await emit({ type: "think", text: resp.thinking });
+
+      // 관용 파싱: 모델이 {"action":"try_sql","sql":...}처럼 연산명을 action에 직접 쓰는 경우
+      // op 호출로 재해석 (__13_ RV01·RV02: 유효한 SQL이 최종 액션으로 오인되어 wrong 처리됨)
+      const KNOWN_OPS = ["browse_terms", "search_terms", "get_column", "resolve_code", "get_join_path", "try_sql"];
+      if (KNOWN_OPS.includes(resp.action)) {
+        const args = { ...resp }; delete args.action; delete args.thinking;
+        resp = { action: "op", op: resp.action, args, thinking: resp.thinking };
+      }
 
       if (resp.action === "sql" && resp.sql) {
         // 실측 강제: 제출 SQL과 동일(정규화)한 try_sql 성공 기록이 있어야 통과.

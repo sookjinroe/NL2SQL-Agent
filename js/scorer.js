@@ -37,8 +37,30 @@
     const d = Math.abs(g - a), m = Math.max(Math.abs(g), Math.abs(a), 1e-12);
     return d / m < 2e-3;
   }
+  // codedict 동치: 골든이 코드값(15)이고 에이전트가 라벨('남성')이거나 그 반대면 동치로 인정.
+  // setCodeDict(layer.codedict)로 주입 - {"table.col": {"15": "남성", ...}}
+  let CODE_EQUIV = null; // Map<string, Set<string>> - "15" ↔ "남성" 양방향
+  function setCodeDict(codedict) {
+    CODE_EQUIV = new Map();
+    for (const col in codedict || {}) {
+      for (const [code, label] of Object.entries(codedict[col])) {
+        const c = String(code).trim(), l = String(label).trim();
+        if (!CODE_EQUIV.has(c)) CODE_EQUIV.set(c, new Set());
+        if (!CODE_EQUIV.has(l)) CODE_EQUIV.set(l, new Set());
+        CODE_EQUIV.get(c).add(l); CODE_EQUIV.get(l).add(c);
+      }
+    }
+  }
+  function codeEquiv(g, a) {
+    if (!CODE_EQUIV) return false;
+    const gs = String(g).trim(), as = String(a).trim();
+    const eq = CODE_EQUIV.get(gs);
+    return !!(eq && eq.has(as));
+  }
+
   function valEq(g, a) {
     if (g === null || g === undefined) return a === null || a === undefined;
+    if (codeEquiv(g, a)) return true;
     if (typeof g === "number" && typeof a === "number") {
       if (numEq(g, a)) return true;
       if (Math.min(Math.abs(g), Math.abs(a)) < 1 && (numEq(g * 100, a) || numEq(g, a * 100))) return true;
@@ -164,5 +186,5 @@
     return byCat;
   }
 
-  return { score, aggregate, runSql, sameResult, detectHallucination, EXCLUDED_CODE_COLS };
+  return { score, aggregate, runSql, sameResult, detectHallucination, setCodeDict, EXCLUDED_CODE_COLS };
 });

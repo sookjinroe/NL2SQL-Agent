@@ -132,6 +132,7 @@ function NLScreenV2() {
         window[dbKey] = dbRef.current;
       }
       window.LayerOpsV2.init(window.Dataset.layer(), (sql) => dbRef.current.exec(sql));
+      if (window.Scorer.setCodeDict) window.Scorer.setCodeDict(window.Dataset.layer().codedict);
       setReady("ok");
     } catch (e) { setReady("err: " + (e.message || e)); }
   })(); }, []);
