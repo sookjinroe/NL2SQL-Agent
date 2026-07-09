@@ -110,8 +110,9 @@ function NLScreenV2() {
   const [ready, setReady] = n2UseState(null);     // null=로딩, 'ok', 'err:...'
   const [results, setResults] = n2UseState({});   // qid → {status, events, final, verdict, execRows}
   const [active, setActive] = n2UseState(null);
-  const [busy, setBusy] = n2UseState(false);
-  const busyRef = n2UseRef(false);
+  const [busy, setBusy] = n2UseState(false);           // 하나라도 실행 중이면 true (전체 실행 버튼 비활성용)
+  const runningCountRef = n2UseRef(0);                  // 동시 실행 개수 - 여러 문항 병렬 실행 지원
+  const runAllRef = n2UseRef(false);                    // runAll 자체의 이중 진입만 차단
   const [note, setNote] = n2UseState(null);
   const [selfCheck, setSelfCheck] = n2UseState(null);
   const dbRef = n2UseRef(null);
@@ -144,14 +145,13 @@ function NLScreenV2() {
   const setRes = (id, patch) => setResults((p) => ({ ...p, [id]: { ...(p[id] || {}), ...patch } }));
 
   async function runOne(q, live) {
-    // 단건 실행도 배타적 — 동시 실행은 API 재시도 폭주·DB 인터리브·상태 경합으로 브라우저를 뻗게 함
-    if (live) {
-      if (busyRef.current) return;
-      busyRef.current = true; setBusy(true);
-    }
+    // 동시 실행 허용 (사용자가 여러 문항 클릭 가능) — 브라우저 정지 근본 원인들
+    // (프로토콜 루프·카티전 조인)은 이미 자동 실측 대행·카티전 가드로 해소됨.
+    runningCountRef.current++;
+    setBusy(true);
     const T = live ? N_TV2.live : N_TV2.batch;
     const t0 = performance.now();
-    runningRef.current = q.id;
+    if (live) runningRef.current = q.id;
     if (live || followRef.current) setActive(q.id);  // 단건은 항상, 전체 실행 중엔 추적 켜진 경우만
     setRes(q.id, { status: "running", events: [], final: null, verdict: null, execRows: null });
     const events = [];
@@ -190,19 +190,21 @@ function NLScreenV2() {
     push({ k: "verdict", v: verdict });
     const elapsed_ms = Math.round(performance.now() - t0);
     setRes(q.id, { status: "done", final: out.final, verdict, execRows, execErr, opsTrace: out.opsTrace, elapsed_ms, turns: out.turns });
-    if (live) { busyRef.current = false; setBusy(false); runningRef.current = null; }
+    runningCountRef.current = Math.max(0, runningCountRef.current - 1);
+    if (runningCountRef.current === 0) { setBusy(false); runningRef.current = null; }
   }
 
   async function runAll() {
-    if (busyRef.current) return;
-    abortRef.current = false; followRef.current = true; busyRef.current = true; setBusy(true);
+    if (runAllRef.current) return;
+    runAllRef.current = true;
+    abortRef.current = false; followRef.current = true;
     for (const q of Q) {
       if (abortRef.current) break;
       const ex = results[q.id];
       if (ex && ex.status === "done") continue;
       try { await runOne(q, false); } catch (e) { setRes(q.id, { status: "done", verdict: { verdict: "wrong", flags: [], detail: "실행 오류: " + e, cat: q.cat, ops_recall: 0, n_ops: 0 } }); }
     }
-    followRef.current = true; busyRef.current = false; setBusy(false);
+    followRef.current = true; runAllRef.current = false;
   }
 
   function harnessSelfCheck() {
@@ -361,7 +363,10 @@ function NLScreenV2() {
             {Q.filter((q) => q.cat === cat).map((q) => (
               <QuestionRowV2 key={q.id} q={q} r={results[q.id]} active={active === q.id} busy={busy}
                 onView={() => { if (q.id !== runningRef.current) followRef.current = false; setActive(q.id); }}
-                onRun={() => { if (!busy) runOne(q, true).catch(() => { busyRef.current = false; setBusy(false); }); }} />))}
+                onRun={() => { runOne(q, true).catch(() => {
+                  runningCountRef.current = Math.max(0, runningCountRef.current - 1);
+                  if (runningCountRef.current === 0) setBusy(false);
+                }); }} />))}
           </div>
         ))}
         </div>
