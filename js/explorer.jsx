@@ -641,7 +641,10 @@ function QuestionView({ db, Q, route, nav }) {
     return <ECenter>골든 질문 세트가 없는 데이터셋입니다 (Fineract 탐색 모드). NL 탭에서 자유 질의로 관찰하세요.</ECenter>;
   }
   const sel = route.sel || Q[0].id;
-  const cats = ["normal", "family", "granularity", "boundary", "join"];
+  // 데이터셋별 카테고리 목록 - Q에서 실제 등장 순서로 도출 (mock/fineract 자동 적응)
+  const CAT_ORDER = { normal: 1, family: 2, granularity: 3, boundary: 4, join: 5,
+                      metric: 1, join_grain: 2, codedict: 3, time_format: 4, review: 5, conceptual: 6, boundary_f: 7, free: 99 };
+  const cats = Array.from(new Set(Q.map((q) => q.cat))).sort((a, b) => (CAT_ORDER[a]||50) - (CAT_ORDER[b]||50));
   const left = cats.map((cat) => (
     <div key={cat} style={{ marginBottom: 11 }}>
       <div style={{ marginBottom: 6 }}>

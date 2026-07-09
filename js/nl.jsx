@@ -11,7 +11,19 @@ const { useState: nUseState, useRef: nUseRef, useEffect: nUseEffect } = React;
 const N_T = { live: { think: 420, req: 600, done: 520 }, batch: { think: 60, req: 90, done: 80 } };
 const VCOLOR = { correct: "var(--high)", partial: "var(--med)", wrong: "var(--low)" };
 const VLABEL = { correct: "정답", partial: "부분", wrong: "오답" };
-const CATL = { normal: "정상 경로", family: "충돌 패밀리", granularity: "입도", boundary: "경계 결손", join: "조인", free: "자유 질의 (탐색)" };
+const CATL = {
+  // mock 카테고리
+  normal: "정상 경로", family: "충돌 패밀리", granularity: "입도", boundary: "경계 결손", join: "조인",
+  // fineract 카테고리 (재료 표적)
+  metric: "정본 지표 (metric)",
+  join_grain: "조인·grain",
+  codedict: "코드값 사전",
+  time_format: "시간·형식",
+  review: "신뢰도 하향",
+  conceptual: "개념 응축 (clarify)",
+  // 공통
+  free: "자유 질의 (탐색)",
+};
 const mono = { fontFamily: "var(--mono)" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const NL_MARKER_COLOR = { "함정":"var(--low)", "경계":"var(--med)", "D8":"var(--sig)",
