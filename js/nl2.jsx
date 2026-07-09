@@ -116,14 +116,7 @@ function NLScreenV2() {
   const isFree = window.Dataset.isFree();
   const [freeQs, setFreeQs] = n2UseState([]);   // fineract 자유 질의 목록 (골든셋과 병존)
   const [freeInput, setFreeInput] = n2UseState("");
-  const [coreOnly, setCoreOnly] = n2UseState(false);
-  const [catFilter, setCatFilter] = n2UseState({});   // cat → true면 숨김
-  const goldensAll = window.Dataset.questions();
-  const goldens = goldensAll.filter((q) => {
-    if (coreOnly && !q.core) return false;
-    if (catFilter[q.cat]) return false;
-    return true;
-  });
+  const goldens = window.Dataset.questions();
   const Q = isFree ? [...goldens, ...freeQs] : goldens;
 
   n2UseEffect(() => { (async () => {
@@ -276,33 +269,7 @@ function NLScreenV2() {
         <div style={{ fontSize: 14.5, color: "var(--muted)", marginBottom: 14 }}>
           충분히 채워진 시맨틱 레이어가 주어졌을 때, 레이어를 소비하는 에이전트의 로직이 성립하는가
         </div>
-        {/* 필터 바 */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 10,
-                      padding: "8px 10px", background: "rgba(0,0,0,0.15)", border: "1px solid var(--border)", borderRadius: 4 }}>
-          <span style={{ fontSize: 12.5, color: "var(--muted)" }}>필터:</span>
-          <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-            <input type="checkbox" checked={coreOnly} onChange={(e) => setCoreOnly(e.target.checked)} />
-            핵심({goldensAll.filter((q) => q.core).length})
-          </label>
-          <span style={{ color: "var(--dim)" }}>|</span>
-          {Array.from(new Set(goldensAll.map((q) => q.cat))).sort((a, b) => {
-            const O = { normal:1, family:2, granularity:3, boundary:4, join:5,
-                        metric:1, join_grain:2, codedict:3, time_format:4, review:5, conceptual:6, free:99 };
-            return (O[a]||50) - (O[b]||50);
-          }).map((cat) => {
-            const cnt = goldensAll.filter((q) => q.cat === cat).length;
-            const hidden = catFilter[cat];
-            return (
-              <label key={cat} style={{ fontSize: 12.5, display: "flex", alignItems: "center", gap: 3, cursor: "pointer",
-                                        opacity: hidden ? 0.4 : 1 }}>
-                <input type="checkbox" checked={!hidden} onChange={(e) => setCatFilter({ ...catFilter, [cat]: !e.target.checked })} />
-                {CATLV2[cat] || cat}({cnt})
-              </label>
-            );
-          })}
-          <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--muted)" }}>표시: {goldens.length}</span>
-        </div>
-        {isFree && (
+                {isFree && (
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 13.5, color: "var(--muted)", marginBottom: 6 }}>
               Fineract 재료 표적 골든 + 자유 질의 병존. 질문 추가 시 F## ID 부여.
@@ -482,21 +449,30 @@ function VerdictCardV2({ v, q }) {
 }
 
 function ScoreboardV2({ agg, total }) {
+  // 카테고리별 → 전체 합산 (표시 간소화)
+  const sum = { correct: 0, partial: 0, wrong: 0, hallucination: 0, tool_miss: 0, n_ops: 0 };
+  for (const b of Object.values(agg)) {
+    sum.correct += b.correct || 0;
+    sum.partial += b.partial || 0;
+    sum.wrong += b.wrong || 0;
+    sum.hallucination += b.hallucination || 0;
+    sum.tool_miss += b.tool_miss || 0;
+    sum.n_ops += (b.avg_ops || 0) * (b.n || 0);
+  }
+  const totalN = Object.values(agg).reduce((s, b) => s + (b.n || 0), 0);
+  const avgOps = totalN ? (sum.n_ops / totalN).toFixed(1) : "0.0";
   return (
     <div style={{ border: "1px solid var(--border)", borderRadius: 5, padding: "10px 12px", marginTop: 6 }}>
       <div style={{ ...monoV2, fontSize: 13, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 7 }}>스코어보드 · 채점 {total}건</div>
-      {Object.entries(agg).map(([cat, b]) => (
-        <div key={cat} style={{ display: "flex", gap: 8, ...monoV2, fontSize: 14, padding: "2px 0", alignItems: "baseline" }}>
-          <span style={{ width: 78, color: "var(--text)" }}>{CATLV2[cat] || cat}</span>
-          <span style={{ color: "var(--high)" }}>정답 {b.correct}</span>
-          <span style={{ color: "var(--med)" }}>부분 {b.partial}</span>
-          <span style={{ color: "var(--low)" }}>오답 {b.wrong}</span>
-          {b.hallucination > 0 && <span style={{ color: "var(--low)" }}>환각 {b.hallucination}</span>}
-          {b.tool_miss > 0 && <span style={{ color: "var(--dim)" }}>tool-miss {b.tool_miss}</span>}
-          <span style={{ flex: 1 }} />
-          <span style={{ color: "var(--dim)" }}>{b.avg_ops}연산</span>
-        </div>
-      ))}
+      <div style={{ display: "flex", gap: 10, ...monoV2, fontSize: 14, alignItems: "baseline" }}>
+        <span style={{ color: "var(--high)" }}>정답 {sum.correct}</span>
+        <span style={{ color: "var(--med)" }}>부분 {sum.partial}</span>
+        <span style={{ color: "var(--low)" }}>오답 {sum.wrong}</span>
+        {sum.hallucination > 0 && <span style={{ color: "var(--low)" }}>환각 {sum.hallucination}</span>}
+        {sum.tool_miss > 0 && <span style={{ color: "var(--dim)" }}>tool-miss {sum.tool_miss}</span>}
+        <span style={{ flex: 1 }} />
+        <span style={{ color: "var(--dim)" }}>평균 {avgOps}연산</span>
+      </div>
     </div>
   );
 }
