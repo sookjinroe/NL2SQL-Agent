@@ -102,9 +102,10 @@ function NLScreen() {
   const followRef = nUseRef(true);  // 전체 실행 중 진행 문항 자동 추적 (사용자 수동 선택 시 false)
   const runningRef = nUseRef(null);  // 현재 실행 중 문항 id
   const isFree = window.Dataset.isFree();
-  const [freeQs, setFreeQs] = nUseState([]);   // fineract 자유 질의 목록
+  const [freeQs, setFreeQs] = nUseState([]);   // fineract 자유 질의 목록 (골든셋과 병존)
   const [freeInput, setFreeInput] = nUseState("");
-  const Q = isFree ? freeQs : window.Dataset.questions();
+  const goldens = window.Dataset.questions();
+  const Q = isFree ? [...goldens, ...freeQs] : goldens;
 
   nUseEffect(() => { (async () => {
     try {
@@ -259,7 +260,7 @@ function NLScreen() {
         {isFree && (
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 13.5, color: "var(--muted)", marginBottom: 6 }}>
-              Fineract 탐색 모드 — 골든 없음. 자유 질의로 에이전트의 레이어 소비를 관찰.
+              Fineract 재료 표적 골든 {goldens.length}문항 + 자유 질의 병존. 질문 추가 시 F## ID 부여.
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <input value={freeInput} onChange={(e) => setFreeInput(e.target.value)}
@@ -276,7 +277,7 @@ function NLScreen() {
           </div>
         )}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-          <Btn on={!busy && Q.length > 0} color="var(--accent)" onClick={runAll}>전체 실행</Btn>
+          <Btn on={!busy && Q.length > 0} color="var(--accent)" onClick={runAll}>전체 실행 ({Q.length})</Btn>
           <Btn on={busy} color="var(--low)" onClick={() => (abortRef.current = true)}>중단</Btn>
           {!isFree && <Btn on={!busy} color="var(--dim)" onClick={harnessSelfCheck}>하니스 자가검증</Btn>}
           <Btn on={done.length > 0} color="var(--dim)" onClick={downloadResults}>결과 JSONL</Btn>

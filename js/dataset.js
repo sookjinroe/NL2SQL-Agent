@@ -22,8 +22,9 @@ window.Dataset = (function () {
     return get() === "fineract" ? "data/world-fineract.db" : "data/world.db";
   }
   function questions() {
-    // fineract는 골든 없음 (자기순환 방지 — 골든은 별도 세션에서 저작). 자유 질의만.
-    return get() === "fineract" ? [] : window.QUESTIONS;
+    // fineract는 재료 표적 골든 48문항 (Claude 저작 · 재료를 아는 관점).
+    // 실제 사용자 골든과 성격 다름 — 재료 완결성 확인 + 프롬프트 튜닝 근거.
+    return get() === "fineract" ? (window.QUESTIONS_FINERACT || []) : window.QUESTIONS;
   }
   function snapshot() {
     return get() === "fineract" ? null : window.NLSnapshot;
