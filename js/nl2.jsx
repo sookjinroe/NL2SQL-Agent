@@ -279,7 +279,8 @@ function NLScreenV2() {
   if (ready !== "ok") return <CenterV2>초기화 실패 — {ready} (http 서버로 실행했는지 확인)</CenterV2>;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "390px 1fr", gap: 0, minHeight: "100vh" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "390px 1fr", gap: 0,
+                  height: "calc(100vh - 48px)", overflow: "hidden" }}>
       {/* ---- 좌: 제어 + 스코어보드 + 질문 목록 ---- */}
       <div style={{ borderRight: "1px solid var(--border)", padding: "18px 16px", overflowY: "auto" }}>
         <div style={{ ...monoV2, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>NL 에이전트 · 레이어 소비 검증</div>
@@ -347,8 +348,7 @@ function NLScreenV2() {
           return { avg: ts.reduce((a, b) => a + b, 0) / ts.length / 1000, max: Math.max(...ts) / 1000 };
         })()} />}
 
-        <div style={{ maxHeight: "calc(100vh - 340px)", overflowY: "auto", paddingRight: 4,
-                       border: "1px solid var(--border)", borderRadius: 4, padding: "6px 10px" }}>
+        <div style={{ paddingRight: 4, border: "1px solid var(--border)", borderRadius: 4, padding: "6px 10px" }}>
         {Array.from(new Set(Q.map((q) => q.cat))).sort((a, b) => {
           const O = { normal: 1, family: 2, granularity: 3, boundary: 4, join: 5,
                       metric: 1, join_grain: 2, codedict: 3, time_format: 4, review: 5, conceptual: 6, analytic: 8, free: 99 };
@@ -368,7 +368,7 @@ function NLScreenV2() {
       </div>
 
       {/* ---- 우: 트레이스(60%) + 질문 상세(40%) ---- */}
-      <div style={{ display: "flex", overflow: "hidden" }}>
+      <div style={{ display: "flex", overflow: "hidden", minHeight: 0 }}>
         <div style={{ flex: "0 0 60%", padding: "20px 24px", overflowY: "auto", borderRight: "1px solid var(--border)" }}>
           {!active && <CenterV2>질문을 클릭하면 단건 실행(라이브), 전체 실행은 좌측 버튼.</CenterV2>}
           {busy && !followRef.current && (
