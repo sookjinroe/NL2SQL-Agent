@@ -64,7 +64,7 @@
     }
     // 정본 지표 — 규모가 커져도 수십 개 상한이므로 항상 전체 상주
     parts.push(``, `[정본 지표 — ${(L.metrics || []).length}개. 비율·총액·평균 질문은 여기 있으면 반드시 이 정의를 따를 것]`);
-    for (const m of L.metrics || []) parts.push(`${m.id} = ${m.name} | grain: ${m.grain} | 기준: ${(m.base_filters || []).join("; ")}`);
+    for (const m of L.metrics || []) parts.push(`${m.id} = ${m.name} | grain: ${m.grain} | 정의식: ${m.expr} | 기준: ${(m.base_filters || []).join("; ")}${m.note ? " | " + m.note : ""}`);
     // 테이블 grain
     const tbls = (L.tables || []).filter((t) => t.grain);
     parts.push(``, `[테이블 grain — ${tbls.length}개. 조인·집계 전 grain을 확인해 팬아웃을 방지할 것]`);

@@ -47,7 +47,7 @@ ${catalogMap}
 1. 탐색: 지도에서 관련 Term·지표를 찾는다. 지도의 한 줄로 부족하면 browse/search로 상세 확인.
    비율·총액·평균 질문에 해당 지표가 지도에 있으면 반드시 그 정의(grain·기준 필터)를 따른다.
 2. 초안: 코드성 필터는 resolve_code로 리터럴 확정, 날짜는 get_column의 format 확인, 두 테이블 조인은 get_join_path 경로만.
-3. 실측: 제출 전 try_sql로 초안을 실행한다.
+3. 실측: 제출 전 try_sql로 초안을 실행한다. 실행 확인되지 않은 SQL 제출은 시스템이 거부한다 — 제출할 SQL과 동일한 SQL을 try_sql로 먼저 실행하라. 컬럼명은 절대 추측하지 마라: 지도에는 컬럼명이 없다. get_column 또는 try_sql로 확인된 이름만 쓰라.
 4. 분기:
    - 결과가 상식적 규모·구조 → 그대로 최종 제출. 파고들지 마라.
    - 0행 / 예상과 크게 다른 규모 / 오류 → 진단 모드:
@@ -106,6 +106,22 @@ ${catalogMap}
                  log, opsTrace, turns, error: String(e.message || e) };
       }
       if (resp.thinking) await emit({ type: "think", text: resp.thinking });
+
+      if (resp.action === "sql" && resp.sql) {
+        // 실측 강제: 제출 SQL과 동일(정규화)한 try_sql 성공 기록이 있어야 통과.
+        // 프롬프트 순응에 기대지 않는 프로토콜 레벨 강제 (__11_ 관찰: 규약만으로는 3/47만 실측).
+        const normSql = (s) => String(s).replace(/\s+/g, " ").trim().replace(/;$/, "");
+        const verified = log.some((e) => e.op === "try_sql" && e.result && e.result.ok === true
+                                          && normSql((e.args || {}).sql || "") === normSql(resp.sql));
+        if (!verified && sqlUsed < MAX_TRYSQL) {
+          log.push({ op: "_protocol", args: {},
+                     result: { error: "제출 거부 — 이 SQL은 try_sql로 실행 확인되지 않았다. 먼저 try_sql {sql: <동일한 SQL>}로 실행해 결과를 확인한 뒤 제출하라. 컬럼명 오류·0행·이상 규모가 여기서 걸러진다." } });
+          await emit({ type: "note", text: "프로토콜: 미실측 SQL 제출 거부 → try_sql 유도" });
+          continue;
+        }
+        // 예산 소진 시에는 통과시키되 표식 남김 (영구 루프 방지)
+        if (!verified) await emit({ type: "note", text: "try_sql 예산 소진 상태로 미실측 SQL 제출 허용" });
+      }
 
       if (resp.action === "op") {
         const isSql = resp.op === "try_sql";
