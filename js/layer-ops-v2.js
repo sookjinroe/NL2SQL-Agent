@@ -180,7 +180,8 @@
                         : { paths: [], note: "FK 경로 없음 — 두 테이블이 그래프상 연결되지 않음", _hit: false };
   }
 
-  const TRY_SQL_MAX_ROWS = 3;
+  const TRY_SQL_FULL_THRESHOLD = 20;  // 이하이면 전량 반환 (진단 쿼리는 저카디널리티 집계)
+  const TRY_SQL_MAX_ROWS = 3;         // 초과 시 상위 3행만 (상세 리스트 쿼리)
   function try_sql({ sql }) {
     if (!execSql) return { ok: false, error: "실행기 미주입 (앱 초기화 문제)", _hit: false };
     const s = String(sql || "").trim();
@@ -198,10 +199,14 @@
         note: "0행 — 결과가 없다고 단정하기 전에 진단하라: 필터 조건·코드값·데이터 채움 상태 중 무엇이 원인인지 (여러 가설을 한 쿼리로: 상태별 × NULL여부 × 값존재 동시 집계).", _hit: true };
       const { columns, values } = res[0];
       const rowCount = values.length > 50 ? "50+" : values.length;
-      const rows = values.slice(0, TRY_SQL_MAX_ROWS).map((v) => {
+      // 적응형: 저카디널리티 결과(진단 집계)는 전량, 대형 결과는 상위 3행
+      const take = values.length <= TRY_SQL_FULL_THRESHOLD ? values.length : TRY_SQL_MAX_ROWS;
+      const rows = values.slice(0, take).map((v) => {
         const o = {}; columns.forEach((c, i) => (o[c] = v[i])); return o;
       });
-      return { ok: true, row_count: rowCount, cols: columns, rows, _hit: true };
+      const out = { ok: true, row_count: rowCount, cols: columns, rows, _hit: true };
+      if (values.length > take) out.note = `상위 ${take}행만 표시 (전체 ${rowCount}행)`;
+      return out;
     } catch (e) {
       return { ok: false, error: String(e.message || e), _hit: true };
     }

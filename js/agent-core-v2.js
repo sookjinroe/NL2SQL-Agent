@@ -59,7 +59,12 @@ ${catalogMap}
         Term의 다른 자산, 다른 테이블에서의 재구성. 대안 성공 시 assumptions에 우회 근거를 명시하고 제출.
      c. 대안이 없으면 cannot_answer에 진단 결과를 첨부한다. "0행이므로 불가"가 아니라
         "X가 채워져 있지 않고 Y로도 재구성 불가"처럼 원인을 특정하라.
-5. clarify는 실측으로 가를 수 없는 해석 차이에만 쓴다 (예: 부채 잔액 vs 자산 잔액처럼 도메인이 갈리는 경우).
+5. 최종 SQL의 출력은 질문이 묻는 값을 직접 반환해야 한다 — 비율을 물으면 비율 컬럼을,
+   건수를 물으면 건수를. 분자·분모나 중간 계산값을 던져 사용자가 계산하게 만들지 마라.
+   실측한 SQL을 다듬어 제출하면 시스템이 자동으로 재실측해주니 형태를 아끼지 마라.
+6. assumptions에는 사용자에게 유의미한 가정만 적는다 — 해석 선택(어느 금액 기준인지),
+   기준 필터, 우회 계산의 근거. 내부 시행착오(문법 수정, 함수 대체)나 조회 과정 요약은 적지 마라.
+7. clarify는 실측으로 가를 수 없는 해석 차이에만 쓴다 (예: 부채 잔액 vs 자산 잔액처럼 도메인이 갈리는 경우).
    컬럼·코드값·데이터 상태에 대한 불확실성은 clarify 대상이 아니다 — 조회와 try_sql로 해소하라.
 
 [출력 — JSON 하나만, 마크다운 펜스·설명 텍스트 금지]
@@ -119,6 +124,7 @@ ${catalogMap}
           await emit({ type: "note", text: "프로토콜: 미실측 SQL — 자동 실측 수행" });
           await emit({ type: "op_request", op: "try_sql", args: { sql: resp.sql } });
           const ar = layerCall("try_sql", { sql: resp.sql });
+          if (ar.public && ar.public.ok === false) sqlUsed--;  // 오류는 예산 환급
           opsTrace.push({ op: "try_sql", args: { sql: resp.sql }, hit: ar.raw && ar.raw._hit === false ? false : true, auto: true });
           log.push({ op: "try_sql", args: { sql: resp.sql }, result: ar.public, auto: true,
                      note: "제출 SQL 자동 실측. ok=true고 결과가 상식적이면 같은 SQL을 그대로 재제출하라. 오류·0행·이상 규모면 진단하고 수정하라." });
@@ -152,6 +158,9 @@ ${catalogMap}
         if (isSql) sqlUsed++; else lookupUsed++;
         await emit({ type: "op_request", op: resp.op, args: resp.args || {} });
         const r = layerCall(resp.op, resp.args || {});
+        // 실행 오류(문법·컬럼명)는 실측 정보를 얻지 못했으므로 예산 환급.
+        // 무한 오류 루프는 HARD_TURN_CAP과 중복 호출 차단이 방어.
+        if (isSql && r.public && r.public.ok === false) sqlUsed--;
         opsTrace.push({ op: resp.op, args: resp.args || {},
                         hit: r.raw && r.raw._hit === false ? false : true });
         log.push({ op: resp.op, args: resp.args || {}, result: r.public });
