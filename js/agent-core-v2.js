@@ -114,9 +114,15 @@ ${catalogMap}
         const verified = log.some((e) => e.op === "try_sql" && e.result && e.result.ok === true
                                           && normSql((e.args || {}).sql || "") === normSql(resp.sql));
         if (!verified && sqlUsed < MAX_TRYSQL) {
-          log.push({ op: "_protocol", args: {},
-                     result: { error: "제출 거부 — 이 SQL은 try_sql로 실행 확인되지 않았다. 먼저 try_sql {sql: <동일한 SQL>}로 실행해 결과를 확인한 뒤 제출하라. 컬럼명 오류·0행·이상 규모가 여기서 걸러진다." } });
-          await emit({ type: "note", text: "프로토콜: 미실측 SQL 제출 거부 → try_sql 유도" });
+          // 거부하고 되돌리는 대신 코어가 직접 실측을 대행 — 왕복 1회 절약, 모델 불응 위험 제거.
+          sqlUsed++;
+          await emit({ type: "note", text: "프로토콜: 미실측 SQL — 자동 실측 수행" });
+          await emit({ type: "op_request", op: "try_sql", args: { sql: resp.sql } });
+          const ar = layerCall("try_sql", { sql: resp.sql });
+          opsTrace.push({ op: "try_sql", args: { sql: resp.sql }, hit: ar.raw && ar.raw._hit === false ? false : true, auto: true });
+          log.push({ op: "try_sql", args: { sql: resp.sql }, result: ar.public, auto: true,
+                     note: "제출 SQL 자동 실측. ok=true고 결과가 상식적이면 같은 SQL을 그대로 재제출하라. 오류·0행·이상 규모면 진단하고 수정하라." });
+          await emit({ type: "op_done", op: "try_sql", args: { sql: resp.sql }, result: ar.public });
           continue;
         }
         // 예산 소진 시에는 통과시키되 표식 남김 (영구 루프 방지)

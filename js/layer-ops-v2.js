@@ -186,6 +186,10 @@
     const s = String(sql || "").trim();
     if (!/^select\b/i.test(s)) return { ok: false, error: "SELECT만 허용", _hit: false };
     if (/;\s*\S/.test(s)) return { ok: false, error: "단일 문장만 허용", _hit: false };
+    // 카티전 곱 방어: JOIN에 ON/USING 없으면 거부 (sql.js 동기 실행이 메인 스레드를 얼릴 수 있음)
+    const joins = (s.match(/\bjoin\b/gi) || []).length;
+    const ons = (s.match(/\b(on|using)\b/gi) || []).length;
+    if (joins > 0 && ons < joins) return { ok: false, error: "JOIN에 ON 조건이 없다 — 카티전 곱은 브라우저를 정지시킨다. 모든 JOIN에 ON을 명시하라.", _hit: false };
     try {
       // LIMIT 강제: 외곽 래핑으로 원 쿼리 의미 보존하며 행 수만 제한
       const wrapped = `SELECT * FROM (${s.replace(/;\s*$/, "")}) __t LIMIT 51`;
