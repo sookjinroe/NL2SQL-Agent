@@ -8,7 +8,7 @@
 // ============================================================
 const { useState: eUseState, useRef: eUseRef, useEffect: eUseEffect } = React;
 const eMono = { fontFamily: "var(--mono)" };
-const DOM_COLOR = { CUSTOMER: "var(--sig)", LOAN: "var(--accent)", CARD: "var(--lin)", DEPOSIT: "var(--high)", RISK: "var(--low)" };
+const DOM_COLOR = { CUSTOMER: "var(--sig)", LOAN: "var(--accent)", CARD: "var(--lin)", DEPOSIT: "var(--high)", RISK: "var(--low)", CLIENT: "var(--sig)", SAVINGS: "var(--high)", COMMON: "var(--dim)" };
 const ROLE_COLOR = { stored_as: "var(--accent)", measured_by: "var(--sig)", identified_by: "var(--high)",
                      attribute_of: "var(--med)", dated_by: "var(--lin)", segmented_by: "var(--text)", expressed_as: "var(--low)" };
 const FAM_LABEL = { F1_grade: "F1 등급", F2_status: "F2 상태", F3_repayment: "F3 상환방식", F4_limit: "F4 한도",
@@ -173,7 +173,7 @@ function ResultTbl({ rows }) {
 // ============ ① 테이블 뷰 (물리) ============
 function TableView({ db, L, idx, counts, route, nav }) {
   const sel = route.sel || "LOAN_ACCT_MST";
-  const doms = ["CUSTOMER", "LOAN", "CARD", "DEPOSIT", "RISK"];
+  const doms = Array.from(new Set(L.tables.map((t) => t.domain).filter(Boolean)));
   const left = doms.map((d) => (
     <div key={d} style={{ marginBottom: 12 }}>
       <div style={{ ...eMono, fontSize: 13, letterSpacing: "0.08em", color: DOM_COLOR[d], marginBottom: 5 }}>{d}</div>
@@ -201,7 +201,7 @@ function TableDetail({ db, L, idx, name, counts, hl, nav }) {
     const r = db.exec(`SELECT * FROM ${name} LIMIT 5`);
     if (r.length) sample = r[0].values.map((v) => Object.fromEntries(r[0].columns.map((c, i) => [c, v[i]])));
   } catch (e) {}
-  const codeCols = cols.filter((c) => c.code_system || /(_CD|_FLG)$/.test(c.id.split(".")[1]));
+  const codeCols = cols.filter((c) => c.code_system || /(_CD|_FLG|_enum|_cv_id)$/.test(c.id.split(".")[1]));
   const dists = codeCols.slice(0, 4).map((c) => {
     const col = c.id.split(".")[1];
     try {
@@ -209,7 +209,7 @@ function TableDetail({ db, L, idx, name, counts, hl, nav }) {
       if (!r.length) return null;
       const total = r[0].values.reduce((a, v) => a + v[1], 0);
       const dict = L.codedict[c.id];
-      return { col, dictless: !dict && /_CD$/.test(col),
+      return { col, dictless: !dict && /(_CD|_enum|_cv_id)$/.test(col),
                rows: r[0].values.map(([v, n]) => ({ v: String(v), label: dict ? dict[v] : null, n, pct: n / total })) };
     } catch (e) { return null; }
   }).filter(Boolean);
@@ -231,7 +231,7 @@ function TableDetail({ db, L, idx, name, counts, hl, nav }) {
             <th key={h} style={{ textAlign: "left", padding: "4px 10px 4px 0", color: "var(--muted)", borderBottom: "1px solid var(--border)" }}>{h}</th>))}</tr></thead>
           <tbody>{cols.map((c) => {
             const col = c.id.split(".")[1];
-            const dictless = !L.codedict[c.id] && /_CD$/.test(col);
+            const dictless = !L.codedict[c.id] && /(_CD|_enum|_cv_id)$/.test(col);
             const isHl = hl === c.id;
             return (
               <tr key={c.id} ref={isHl ? hlRef : null}
@@ -322,20 +322,21 @@ function FkGraph({ name, out, inn, nav }) {
 
 // ============ ② Term 뷰 (의미) ============
 // TermView: 3단 — 도메인 네비(좌 88px) / Term 목록(중 200px) / Term 상세(우 나머지)
-const TERM_DOMS = ["CUSTOMER","LOAN","CARD","DEPOSIT","RISK","_DISTRACTOR"];
+function termDoms(L) { return [...Array.from(new Set(L.terms.map((t) => t.domain).filter(Boolean))), "_DISTRACTOR"]; }
 function TermView({ L, idx, route, nav }) {
   const sel = route.sel || "대출연체";
-  const initDom = () => { const t = idx.termByName[sel]; return (t && (t.links||[]).length) ? (t.domain||"CUSTOMER") : "_DISTRACTOR"; };
+  const _termDoms = termDoms(L).filter((d) => d !== "_DISTRACTOR");
+  const initDom = () => { const t = idx.termByName[sel]; return (t && (t.links||[]).length) ? (t.domain||_termDoms[0]||"COMMON") : "_DISTRACTOR"; };
   const [activeDom, setActiveDom] = eUseState(initDom);
   const [filter, setFilter] = eUseState("");
   const nf = window.ExplorerLib.norm(filter);
   const match = (t) => !nf || [t.name,...(t.synonyms||[])].some((k)=>window.ExplorerLib.norm(k).includes(nf));
   eUseEffect(() => {
     const t = idx.termByName[sel];
-    if (t) setActiveDom((t.links&&t.links.length) ? (t.domain||"CUSTOMER") : "_DISTRACTOR");
+    if (t) setActiveDom((t.links&&t.links.length) ? (t.domain||_termDoms[0]||"COMMON") : "_DISTRACTOR");
   }, [sel]);
   const domCounts = {};
-  for (const d of ["CUSTOMER","LOAN","CARD","DEPOSIT","RISK"])
+  for (const d of _termDoms)
     domCounts[d] = L.terms.filter((t)=>t.domain===d&&(t.links||[]).length).length;
   domCounts["_DISTRACTOR"] = L.terms.filter((t)=>!(t.links||[]).length).length;
   const listTerms = activeDom === "_DISTRACTOR"
@@ -344,7 +345,7 @@ function TermView({ L, idx, route, nav }) {
   const domNav = (
     <div style={{width:140,borderRight:"1px solid var(--border)",padding:"14px 8px",overflowY:"auto",flexShrink:0}}>
       <div style={{...eMono,fontSize: 11.5,letterSpacing:"0.1em",color:"var(--dim)",marginBottom:10,paddingLeft:10}}>DOMAIN</div>
-      {TERM_DOMS.map((d)=>{
+      {termDoms(L).map((d)=>{
         const label = d==="_DISTRACTOR"?"DISTRACTOR":d;
         const color = d==="_DISTRACTOR"?"var(--dim)":DOM_COLOR[d];
         const active = activeDom===d;
