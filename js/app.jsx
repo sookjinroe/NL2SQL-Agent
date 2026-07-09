@@ -12,7 +12,7 @@ function AppShell() {
   const [model, setModelState] = aUseState(window.LiveAPI.getModel());
   const [dataset, setDatasetState] = aUseState(window.Dataset.get());
   const [prompt, setPromptState] = aUseState(window.NLData.getPromptId());
-  const tabs = [["intro", "소개"], ["agent", "NL 에이전트"], ["explorer", "데이터 탐색"]];
+  const tabs = [["intro", "소개"], ["agent", "NL 에이전트"], ["agent2", "NL 에이전트 v2"], ["explorer", "데이터 탐색"]];
   return (
     <div>
       <div style={{ display: "flex", gap: 4, padding: "10px 16px 0", borderBottom: "1px solid var(--border)", alignItems: "flex-end" }}>
@@ -48,6 +48,7 @@ function AppShell() {
       </div>
       {tab === "intro" && <window.NLIntro />}
       <div style={{ display: tab === "agent" ? "block" : "none" }}><window.NLScreen /></div>
+      <div style={{ display: tab === "agent2" ? "block" : "none" }}><window.NLScreenV2 /></div>
       {tab === "explorer" && <window.ExplorerScreen />}
     </div>
   );
