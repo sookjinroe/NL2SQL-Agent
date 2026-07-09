@@ -10,7 +10,6 @@ const { useState: aUseState } = React;
 function AppShell() {
   const [tab, setTab] = aUseState("intro");
   const [model, setModelState] = aUseState(window.LiveAPI.getModel());
-  const [dataset, setDatasetState] = aUseState(window.Dataset.get());
   const tabs = [["intro", "소개"], ["agent2", "NL 에이전트"], ["explorer", "데이터 탐색"]];
   return (
     <div>
@@ -23,12 +22,6 @@ function AppShell() {
             {label}
           </div>))}
         <div style={{ flex: 1 }} />
-        <select value={dataset}
-          onChange={(e) => { window.Dataset.set(e.target.value); setDatasetState(e.target.value); location.reload(); }}
-          style={{ fontFamily: "var(--mono)", fontSize: 14, background: "rgba(0,0,0,0.3)", color: "var(--text)",
-                   border: "1px solid var(--border)", borderRadius: 4, padding: "4px 8px", marginBottom: 7, marginRight: 8 }}>
-          {window.Dataset.DATASETS.map((d) => <option key={d.id} value={d.id}>데이터셋: {d.label}</option>)}
-        </select>
         <select value={model}
           onChange={(e) => { window.LiveAPI.setModel(e.target.value); setModelState(e.target.value); }}
           style={{ fontFamily: "var(--mono)", fontSize: 14, background: "rgba(0,0,0,0.3)", color: "var(--text)",
@@ -36,7 +29,7 @@ function AppShell() {
           {window.LiveAPI.MODELS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
         </select>
         <div style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--dim)", paddingBottom: 10, marginLeft: 12 }}>
-          {window.Dataset.get() === "fineract" ? "fineract" : "corpus-v1"}
+          fineract
         </div>
       </div>
       {tab === "intro" && <window.NLIntro />}

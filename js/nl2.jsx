@@ -311,13 +311,10 @@ function NLScreenV2() {
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
           <BtnV2 on={!busy && Q.length > 0} color="var(--accent)" onClick={runAll}>전체 실행 ({Q.length})</BtnV2>
           <BtnV2 on={busy} color="var(--low)" onClick={() => (abortRef.current = true)}>중단</BtnV2>
-          {!isFree && <BtnV2 on={!busy} color="var(--dim)" onClick={harnessSelfCheck}>하니스 자가검증</BtnV2>}
+          <BtnV2 on={!busy} color="var(--dim)" onClick={harnessSelfCheck}>하니스 자가검증</BtnV2>
           <BtnV2 on={done.length > 0} color="var(--dim)" onClick={downloadResults}>결과 JSONL</BtnV2>
           <BtnV2 on={done.length > 0} color="var(--sig)" onClick={saveSnapshot}>스냅샷 저장</BtnV2>
-          {window.NLSnapshot && <BtnV2 on={true} color="var(--sig)" onClick={() => {
-            try { applySnapshot(window.NLSnapshot); } catch (e) { setNote("스냅샷 로드 실패: " + (e.message||e)); setTimeout(()=>setNote(null),4000); }
-          }}>기본 스냅샷</BtnV2>}
-          <label style={{ ...monoV2, fontSize: 13, background: "var(--sig)22", color: "var(--sig)",
+                    <label style={{ ...monoV2, fontSize: 13, background: "var(--sig)22", color: "var(--sig)",
                           border: "1px solid var(--sig)", borderRadius: 4, padding: "6px 12px", cursor: "pointer" }}>
             📁 파일 로드
             <input type="file" accept=".json" style={{ display: "none" }} onChange={(e) => {

@@ -51,7 +51,7 @@ function ExplorerScreen() {
     } catch (e) { setReady("err: " + (e.message || e)); }
   })(); }, []);
 
-  if (ready === null) return <ECenter>world.db(24MB) 적재 중…</ECenter>;
+  if (ready === null) return <ECenter>world-fineract.db(18MB) 적재 중…</ECenter>;
   if (ready !== "ok") return <ECenter>초기화 실패 — {ready} (http 서버로 실행했는지 확인)</ECenter>;
 
   const idx = idxRef.current;
