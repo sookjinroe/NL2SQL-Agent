@@ -21,6 +21,7 @@ const CATLV2 = {
   time_format: "시간·형식",
   review: "신뢰도 하향",
   conceptual: "개념 응축 (clarify)",
+  analytic: "복합 분석",
   // 공통
   free: "자유 질의 (탐색)",
 };
@@ -57,6 +58,9 @@ function QuestionRowV2({ q, r, active, busy, onView, onRun }) {
           {((q.checkpoint||{}).markers||[]).map((m) => (
             <span key={m} style={{ marginLeft: 5 }}><NLMarkerChipV2 m={m} /></span>))}
         </span>
+        {done && r.elapsed_ms != null && (
+          <span style={{ ...monoV2, fontSize: 11.5, color: "var(--dim)", flexShrink: 0, alignSelf: "center" }}>
+            {(r.elapsed_ms / 1000).toFixed(1)}s</span>)}
         <span onClick={(e) => { e.stopPropagation(); onRun(); }}
           title={done ? "다시 실행" : "실행"}
           style={{ ...monoV2, fontSize: 13, flexShrink: 0, alignSelf: "center", padding: "1px 6px", borderRadius: 4,
@@ -146,6 +150,7 @@ function NLScreenV2() {
       busyRef.current = true; setBusy(true);
     }
     const T = live ? N_TV2.live : N_TV2.batch;
+    const t0 = performance.now();
     runningRef.current = q.id;
     if (live || followRef.current) setActive(q.id);  // 단건은 항상, 전체 실행 중엔 추적 켜진 경우만
     setRes(q.id, { status: "running", events: [], final: null, verdict: null, execRows: null });
@@ -183,7 +188,8 @@ function NLScreenV2() {
       : { id: q.id, cat: q.cat || "free", verdict: "n/a", flags: [], detail: "골든 없음 (탐색 실행)", ops_recall: null, n_ops: out.opsTrace.length };
     push({ k: "final", out: out.final, execRows, execErr });
     push({ k: "verdict", v: verdict });
-    setRes(q.id, { status: "done", final: out.final, verdict, execRows, execErr, opsTrace: out.opsTrace });
+    const elapsed_ms = Math.round(performance.now() - t0);
+    setRes(q.id, { status: "done", final: out.final, verdict, execRows, execErr, opsTrace: out.opsTrace, elapsed_ms, turns: out.turns });
     if (live) { busyRef.current = false; setBusy(false); runningRef.current = null; }
   }
 
@@ -237,6 +243,8 @@ function NLScreenV2() {
             final: results[q.id].final,
             verdict: results[q.id].verdict,
             opsTrace: results[q.id].opsTrace || [],
+            elapsed_ms: results[q.id].elapsed_ms,
+            turns: results[q.id].turns,
           }])
       ),
     };
@@ -333,13 +341,17 @@ function NLScreenV2() {
         {note && <div style={{ ...monoV2, fontSize: 14, color: "var(--med)", marginBottom: 8 }}>{note}</div>}
         {!window.LiveAPI.hasKey() && <KeyBoxV2 />}
 
-        {agg && <ScoreboardV2 agg={agg} total={done.length} />}
+        {agg && <ScoreboardV2 agg={agg} total={done.length} timing={(() => {
+          const ts = done.map((q) => (results[q.id] || {}).elapsed_ms).filter((x) => x != null);
+          if (!ts.length) return null;
+          return { avg: ts.reduce((a, b) => a + b, 0) / ts.length / 1000, max: Math.max(...ts) / 1000 };
+        })()} />}
 
         <div style={{ maxHeight: "calc(100vh - 340px)", overflowY: "auto", paddingRight: 4,
                        border: "1px solid var(--border)", borderRadius: 4, padding: "6px 10px" }}>
         {Array.from(new Set(Q.map((q) => q.cat))).sort((a, b) => {
           const O = { normal: 1, family: 2, granularity: 3, boundary: 4, join: 5,
-                      metric: 1, join_grain: 2, codedict: 3, time_format: 4, review: 5, conceptual: 6, free: 99 };
+                      metric: 1, join_grain: 2, codedict: 3, time_format: 4, review: 5, conceptual: 6, analytic: 8, free: 99 };
           return (O[a]||50) - (O[b]||50);
         }).map((cat) => (
           <div key={cat} style={{ marginTop: 14 }}>
@@ -382,7 +394,8 @@ function ThreadV2({ q, r }) {
   if (!r) return null;
   return (
     <div style={{ maxWidth: 860 }}>
-      <div style={{ ...monoV2, fontSize: 13, color: "var(--muted)" }}>{q.id} · {CATLV2[q.cat]}</div>
+      <div style={{ ...monoV2, fontSize: 13, color: "var(--muted)" }}>{q.id} · {CATLV2[q.cat]}
+        {r.elapsed_ms != null && <span> · {(r.elapsed_ms / 1000).toFixed(1)}s · {r.turns || "?"}턴</span>}</div>
       <div style={{ fontSize: 20.5, fontWeight: 600, margin: "6px 0 18px" }}>{q.text}</div>
       {(r.events || []).map((e, i) => <EventV2 key={i} e={e} q={q} />)}
       {r.status === "running" && <div style={{ ...monoV2, fontSize: 14.5, color: "var(--sig)", animation: "pulse 1s infinite" }}>실행 중…</div>}
@@ -457,7 +470,7 @@ function VerdictCardV2({ v, q }) {
   );
 }
 
-function ScoreboardV2({ agg, total }) {
+function ScoreboardV2({ agg, total, timing }) {
   // 카테고리별 → 전체 합산 (표시 간소화)
   const sum = { correct: 0, partial: 0, wrong: 0, hallucination: 0, tool_miss: 0, n_ops: 0 };
   for (const b of Object.values(agg)) {
@@ -481,6 +494,7 @@ function ScoreboardV2({ agg, total }) {
         {sum.tool_miss > 0 && <span style={{ color: "var(--dim)" }}>tool-miss {sum.tool_miss}</span>}
         <span style={{ flex: 1 }} />
         <span style={{ color: "var(--dim)" }}>평균 {avgOps}연산</span>
+        {timing && <span style={{ color: "var(--dim)" }}>· {timing.avg.toFixed(1)}s/문항 (최대 {timing.max.toFixed(1)}s)</span>}
       </div>
     </div>
   );

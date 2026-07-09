@@ -643,7 +643,7 @@ function QuestionView({ db, Q, route, nav }) {
   const sel = route.sel || Q[0].id;
   // 데이터셋별 카테고리 목록 - Q에서 실제 등장 순서로 도출 (mock/fineract 자동 적응)
   const CAT_ORDER = { normal: 1, family: 2, granularity: 3, boundary: 4, join: 5,
-                      metric: 1, join_grain: 2, codedict: 3, time_format: 4, review: 5, conceptual: 6, boundary_f: 7, free: 99 };
+                      metric: 1, join_grain: 2, codedict: 3, time_format: 4, review: 5, conceptual: 6, boundary_f: 7, analytic: 8, free: 99 };
   const cats = Array.from(new Set(Q.map((q) => q.cat))).sort((a, b) => (CAT_ORDER[a]||50) - (CAT_ORDER[b]||50));
   const left = cats.map((cat) => (
     <div key={cat} style={{ marginBottom: 11 }}>
