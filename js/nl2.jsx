@@ -107,6 +107,7 @@ function NLScreenV2() {
   const [results, setResults] = n2UseState({});   // qid → {status, events, final, verdict, execRows}
   const [active, setActive] = n2UseState(null);
   const [busy, setBusy] = n2UseState(false);
+  const busyRef = n2UseRef(false);
   const [note, setNote] = n2UseState(null);
   const [selfCheck, setSelfCheck] = n2UseState(null);
   const dbRef = n2UseRef(null);
@@ -138,6 +139,11 @@ function NLScreenV2() {
   const setRes = (id, patch) => setResults((p) => ({ ...p, [id]: { ...(p[id] || {}), ...patch } }));
 
   async function runOne(q, live) {
+    // 단건 실행도 배타적 — 동시 실행은 API 재시도 폭주·DB 인터리브·상태 경합으로 브라우저를 뻗게 함
+    if (live) {
+      if (busyRef.current) return;
+      busyRef.current = true; setBusy(true);
+    }
     const T = live ? N_TV2.live : N_TV2.batch;
     runningRef.current = q.id;
     if (live || followRef.current) setActive(q.id);  // 단건은 항상, 전체 실행 중엔 추적 켜진 경우만
@@ -177,17 +183,19 @@ function NLScreenV2() {
     push({ k: "final", out: out.final, execRows, execErr });
     push({ k: "verdict", v: verdict });
     setRes(q.id, { status: "done", final: out.final, verdict, execRows, execErr, opsTrace: out.opsTrace });
+    if (live) { busyRef.current = false; setBusy(false); runningRef.current = null; }
   }
 
   async function runAll() {
-    abortRef.current = false; followRef.current = true; setBusy(true);
+    if (busyRef.current) return;
+    abortRef.current = false; followRef.current = true; busyRef.current = true; setBusy(true);
     for (const q of Q) {
       if (abortRef.current) break;
       const ex = results[q.id];
       if (ex && ex.status === "done") continue;
       try { await runOne(q, false); } catch (e) { setRes(q.id, { status: "done", verdict: { verdict: "wrong", flags: [], detail: "실행 오류: " + e, cat: q.cat, ops_recall: 0, n_ops: 0 } }); }
     }
-    followRef.current = true; setBusy(false);
+    followRef.current = true; busyRef.current = false; setBusy(false);
   }
 
   function harnessSelfCheck() {
@@ -340,7 +348,7 @@ function NLScreenV2() {
             {Q.filter((q) => q.cat === cat).map((q) => (
               <QuestionRowV2 key={q.id} q={q} r={results[q.id]} active={active === q.id} busy={busy}
                 onView={() => { if (q.id !== runningRef.current) followRef.current = false; setActive(q.id); }}
-                onRun={() => { if (!busy) runOne(q, true); }} />))}
+                onRun={() => { if (!busy) runOne(q, true).catch(() => { busyRef.current = false; setBusy(false); }); }} />))}
           </div>
         ))}
         </div>
