@@ -304,7 +304,11 @@ function NLScreen() {
 
         {agg && <Scoreboard agg={agg} total={done.length} />}
 
-        {Object.keys(CATL).map((cat) => (
+        {Array.from(new Set(Q.map((q) => q.cat))).sort((a, b) => {
+          const O = { normal: 1, family: 2, granularity: 3, boundary: 4, join: 5,
+                      metric: 1, join_grain: 2, codedict: 3, time_format: 4, review: 5, conceptual: 6, free: 99 };
+          return (O[a]||50) - (O[b]||50);
+        }).map((cat) => (
           <div key={cat} style={{ marginTop: 14 }}>
             <div style={{ ...mono, fontSize: 13, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 6 }}>
               {CATL[cat].toUpperCase()}
