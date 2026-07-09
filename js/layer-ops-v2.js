@@ -120,6 +120,21 @@
       const best = score + incl;
       if (best > 0.3) scored.push({ s: best, r: { kind: "metric", id: m.id, name: m.name, grain: m.grain, expr: m.expr, base_filters: m.base_filters, note: m.note } });
     }
+    // 컬럼 검색: Term이 못 덮은 컬럼도 발견 가능하게 (id·description 매칭)
+    // v2 설계 갭 보완 — Term 미등재 개념(예: 이자 복리 주기)의 유일한 접근 경로였던
+    // search_columns를 제거했더니 "카탈로그에 없음 → 불가" 오판이 발생 (__14_ RV05)
+    for (const c of L.columns || []) {
+      const dtext = (c.description && c.description.text) || "";
+      const hay = norm(c.id + " " + dtext.slice(0, 80));
+      let n = 0; const cg = grams(c.id + " " + dtext.slice(0, 80));
+      for (const x of qg) if (cg.has(x)) n++;
+      const score = qg.size ? n / qg.size : 0;
+      if (score > 0.5 || hay.includes(nq)) {
+        scored.push({ s: score + (hay.includes(nq) ? 0.4 : 0),
+                      r: { kind: "column", id: c.id, table: c.table,
+                           description: dtext.slice(0, 140) } });
+      }
+    }
     scored.sort((a, b) => b.s - a.s);
     const top = scored.slice(0, 6).map((x) => x.r);
     return top.length
