@@ -11,7 +11,7 @@ const { useState: nUseState, useRef: nUseRef, useEffect: nUseEffect } = React;
 const N_T = { live: { think: 420, req: 600, done: 520 }, batch: { think: 60, req: 90, done: 80 } };
 const VCOLOR = { correct: "var(--high)", partial: "var(--med)", wrong: "var(--low)" };
 const VLABEL = { correct: "정답", partial: "부분", wrong: "오답" };
-const CATL = { normal: "정상 경로", family: "충돌 패밀리", granularity: "입도", boundary: "경계 결손", join: "조인" };
+const CATL = { normal: "정상 경로", family: "충돌 패밀리", granularity: "입도", boundary: "경계 결손", join: "조인", free: "자유 질의 (탐색)" };
 const mono = { fontFamily: "var(--mono)" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const NL_MARKER_COLOR = { "함정":"var(--low)", "경계":"var(--med)", "D8":"var(--sig)",
@@ -264,9 +264,10 @@ function NLScreen() {
             <div style={{ display: "flex", gap: 6 }}>
               <input value={freeInput} onChange={(e) => setFreeInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && freeInput.trim() && !busy) {
-                  const q = { id: "F" + String(freeQs.length + 1).padStart(2, "0"), cat: "free", text: freeInput.trim(), mode: "free" };
+                  const q = { id: "F" + String(freeQs.length + 1).padStart(2, "0"), cat: "free", text: freeInput.trim(), mode: "free", golden: null, expected_ops: [] };
                   setFreeQs((p) => [...p, q]); setFreeInput("");
-                  setTimeout(() => runOne(q, true), 50);
+                  // 리렌더 후 실행 - Q 배열에 q가 포함된 상태에서 setActive 되도록
+                  requestAnimationFrame(() => requestAnimationFrame(() => runOne(q, true)));
                 }}}
                 placeholder="질문 입력 후 Enter (예: 활성 고객이 몇 명이야?)"
                 style={{ flex: 1, padding: "8px 10px", background: "var(--panel)", border: "1px solid var(--border)",
@@ -314,11 +315,11 @@ function NLScreen() {
               <span onClick={() => { followRef.current = true; if (runningRef.current) setActive(runningRef.current); }} style={{ ...mono, fontSize: 13, color: "var(--accent)",
                 border: "1px solid var(--accent)66", borderRadius: 4, padding: "2px 9px", cursor: "pointer" }}>최신으로 따라가기</span>
             </div>)}
-          {active && <Thread q={Q.find((x) => x.id === active)} r={results[active]} />}
+          {active && Q.find((x) => x.id === active) && <Thread q={Q.find((x) => x.id === active)} r={results[active]} />}
         </div>
         <div style={{ flex: "0 0 40%", padding: "20px 22px", overflowY: "auto", background: "rgba(0,0,0,0.12)" }}>
           {!active && <Center style={{ fontSize: 15 }}>질문을 선택하면 상세 정보가 표시됩니다.</Center>}
-          {active && window.QDetail && <window.QDetail db={dbRef.current} q={Q.find((x) => x.id === active)} />}
+          {active && Q.find((x) => x.id === active) && window.QDetail && <window.QDetail db={dbRef.current} q={Q.find((x) => x.id === active)} />}
         </div>
       </div>
     </div>
