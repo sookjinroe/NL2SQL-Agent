@@ -8,9 +8,9 @@
 // ============================================================
 const { useState: n2UseState, useRef: n2UseRef, useEffect: n2UseEffect } = React;
 
-const N_T = { live: { think: 420, req: 600, done: 520 }, batch: { think: 60, req: 90, done: 80 } };
-const VCOLOR = { correct: "var(--high)", partial: "var(--med)", wrong: "var(--low)" };
-const VLABEL = { correct: "정답", partial: "부분", wrong: "오답" };
+const N_TV2 = { live: { think: 420, req: 600, done: 520 }, batch: { think: 60, req: 90, done: 80 } };
+const VCOLORV2 = { correct: "var(--high)", partial: "var(--med)", wrong: "var(--low)" };
+const VLABELV2 = { correct: "정답", partial: "부분", wrong: "오답" };
 const CATLV2 = {
   // mock 카테고리
   normal: "정상 경로", family: "충돌 패밀리", granularity: "입도", boundary: "경계 결손", join: "조인",
@@ -25,10 +25,10 @@ const CATLV2 = {
   free: "자유 질의 (탐색)",
 };
 const monoV2 = { fontFamily: "var(--monoV2)" };
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const NL_MARKER_COLOR = { "함정":"var(--low)", "경계":"var(--med)", "D8":"var(--sig)",
+const sleepV2 = (ms) => new Promise((r) => setTimeout(r, ms));
+const NL_MARKER_COLORV2 = { "함정":"var(--low)", "경계":"var(--med)", "D8":"var(--sig)",
   "오류":"var(--lin)", "폴백":"var(--accent)", "조인":"var(--high)", "대표":"var(--dim)", "형식":"var(--lin)" };
-const NL_MARKER_TIP = {
+const NL_MARKER_TIPV2 = {
   "함정": "정본 지표(get_metric)를 쓰지 않으면 숫자가 달라지게 설계된 문항 — 소박한 재계산은 오답",
   "D8":   "질문이 도메인·입도를 특정하지 않음 — 확인 질문 없이 한쪽을 고르면 값이 맞아도 오답",
   "경계": "레이어에 일부러 빠뜨린 정보 앞에서의 행동을 검증 — 지어내면 환각 플래그",
@@ -50,12 +50,12 @@ function QuestionRowV2({ q, r, active, busy, onView, onRun }) {
                background: bg, borderLeft: active ? "2px solid var(--accent)" : "2px solid transparent" }}>
       <div style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
         <span style={{ width: 7, height: 7, borderRadius: 7, flexShrink: 0, alignSelf: "center",
-                       background: v ? VCOLOR[v.verdict] : (r && r.status === "running" ? "var(--sig)" : "var(--border)") }} />
+                       background: v ? VCOLORV2[v.verdict] : (r && r.status === "running" ? "var(--sig)" : "var(--border)") }} />
         <span style={{ lineHeight: 1.5, flex: 1, minWidth: 0 }}>
           <span style={{ ...monoV2, fontSize: 12, color: "var(--dim)", marginRight: 5 }}>{q.id}</span>
           <span style={{ fontSize: 14.5, color: "var(--text)" }}>{q.text}</span>
           {((q.checkpoint||{}).markers||[]).map((m) => (
-            <span key={m} style={{ marginLeft: 5 }}><NLMarkerChip m={m} /></span>))}
+            <span key={m} style={{ marginLeft: 5 }}><NLMarkerChipV2 m={m} /></span>))}
         </span>
         <span onClick={(e) => { e.stopPropagation(); onRun(); }}
           title={done ? "다시 실행" : "실행"}
@@ -69,11 +69,11 @@ function QuestionRowV2({ q, r, active, busy, onView, onRun }) {
         <div style={{ ...monoV2, fontSize: 11, color: "var(--low)", paddingLeft: 14, marginTop: 2 }}>{v.flags.join(" · ")}</div>)}
     </div>);
 }
-function NLMarkerChip({ m }) {
+function NLMarkerChipV2({ m }) {
   const [pos, setPos] = n2UseState(null);  // null=숨김, {x,y,placement}
   const ref = n2UseRef(null);
-  const tip = NL_MARKER_TIP[m.split(":")[0]] || null;
-  const color = NL_MARKER_COLOR[m.split(":")[0]] || "var(--dim)";
+  const tip = NL_MARKER_TIPV2[m.split(":")[0]] || null;
+  const color = NL_MARKER_COLORV2[m.split(":")[0]] || "var(--dim)";
   const W = 260;
   const show = () => {
     if (!tip || !ref.current) return;
@@ -145,7 +145,7 @@ function NLScreenV2() {
   const setRes = (id, patch) => setResults((p) => ({ ...p, [id]: { ...(p[id] || {}), ...patch } }));
 
   async function runOne(q, live) {
-    const T = live ? N_T.live : N_T.batch;
+    const T = live ? N_TV2.live : N_TV2.batch;
     runningRef.current = q.id;
     if (live || followRef.current) setActive(q.id);  // 단건은 항상, 전체 실행 중엔 추적 켜진 경우만
     setRes(q.id, { status: "running", events: [], final: null, verdict: null, execRows: null });
@@ -153,12 +153,12 @@ function NLScreenV2() {
     const push = (e) => { events.push(e); setRes(q.id, { events: [...events] }); };
 
     const onEvent = async (e) => {
-      if (e.type === "think") { push({ k: "think", text: e.text }); await sleep(T.think); }
-      else if (e.type === "op_request") { push({ k: "op", op: e.op, args: e.args, status: "req" }); await sleep(T.req); }
+      if (e.type === "think") { push({ k: "think", text: e.text }); await sleepV2(T.think); }
+      else if (e.type === "op_request") { push({ k: "op", op: e.op, args: e.args, status: "req" }); await sleepV2(T.req); }
       else if (e.type === "op_done") {
         const i = events.findLastIndex((x) => x.k === "op" && x.status === "req");
         if (i >= 0) { events[i] = { ...events[i], status: "done", result: e.result }; setRes(q.id, { events: [...events] }); }
-        await sleep(T.done);
+        await sleepV2(T.done);
       }
       else if (e.type === "note") push({ k: "note", text: e.text });
     };
@@ -357,7 +357,7 @@ function NLScreenV2() {
         {note && <div style={{ ...monoV2, fontSize: 14, color: "var(--med)", marginBottom: 8 }}>{note}</div>}
         {!window.LiveAPI.hasKey() && <KeyBoxV2 />}
 
-        {agg && <Scoreboard agg={agg} total={done.length} />}
+        {agg && <ScoreboardV2 agg={agg} total={done.length} />}
 
         <div style={{ maxHeight: "calc(100vh - 340px)", overflowY: "auto", paddingRight: 4,
                        border: "1px solid var(--border)", borderRadius: 4, padding: "6px 10px" }}>
@@ -431,12 +431,12 @@ function EventV2({ e, q }) {
         {e.result && <pre style={{ ...monoV2, fontSize: 13, color: "var(--text)", whiteSpace: "pre-wrap", margin: "8px 0 0", maxHeight: 150, overflowY: "auto", opacity: 0.85 }}>{JSON.stringify(e.result, null, 1).slice(0, 1200)}</pre>}
       </div>
     );
-  if (e.k === "final") return <FinalCard out={e.out} rows={e.execRows} err={e.execErr} />;
-  if (e.k === "verdict") return <VerdictCard v={e.v} q={q} />;
+  if (e.k === "final") return <FinalCardV2 out={e.out} rows={e.execRows} err={e.execErr} />;
+  if (e.k === "verdict") return <VerdictCardV2 v={e.v} q={q} />;
   return null;
 }
 
-function FinalCard({ out, rows, err }) {
+function FinalCardV2({ out, rows, err }) {
   const tone = out.action === "sql" ? "var(--accent)" : out.action === "clarify" ? "var(--med)" : "var(--dim)";
   return (
     <div style={{ border: `1px solid ${tone}55`, borderLeft: `2px solid ${tone}`, borderRadius: 5, padding: "11px 14px", margin: "14px 0" }}>
@@ -450,12 +450,12 @@ function FinalCard({ out, rows, err }) {
       {(out.assumptions || []).length > 0 &&
         <div style={{ ...monoV2, fontSize: 14, color: "var(--med)", marginTop: 7 }}>가정: {out.assumptions.join(" · ")}</div>}
       {err && <div style={{ ...monoV2, fontSize: 14, color: "var(--low)", marginTop: 7 }}>실행 오류: {err}</div>}
-      {rows && <ResultTable rows={rows} />}
+      {rows && <ResultTableV2 rows={rows} />}
     </div>
   );
 }
 
-function ResultTable({ rows }) {
+function ResultTableV2({ rows }) {
   if (!rows.length) return <div style={{ ...monoV2, fontSize: 14, color: "var(--dim)", marginTop: 8 }}>(0행)</div>;
   const cols = Object.keys(rows[0]); const view = rows.slice(0, 8);
   return (
@@ -469,10 +469,10 @@ function ResultTable({ rows }) {
   );
 }
 
-function VerdictCard({ v, q }) {
+function VerdictCardV2({ v, q }) {
   return (
-    <div style={{ display: "flex", gap: 10, alignItems: "baseline", border: `1px solid ${VCOLOR[v.verdict]}44`, borderRadius: 5, padding: "9px 14px", margin: "10px 0" }}>
-      <span style={{ ...monoV2, fontSize: 15.5, fontWeight: 700, color: VCOLOR[v.verdict] }}>{VLABEL[v.verdict]}</span>
+    <div style={{ display: "flex", gap: 10, alignItems: "baseline", border: `1px solid ${VCOLORV2[v.verdict]}44`, borderRadius: 5, padding: "9px 14px", margin: "10px 0" }}>
+      <span style={{ ...monoV2, fontSize: 15.5, fontWeight: 700, color: VCOLORV2[v.verdict] }}>{VLABELV2[v.verdict]}</span>
       {v.flags.map((f) => <span key={f} style={{ ...monoV2, fontSize: 12.5, color: "var(--low)", border: "1px solid var(--low)55", borderRadius: 4, padding: "1px 7px" }}>{f}</span>)}
       <span style={{ fontSize: 15, color: "var(--muted)" }}>{v.detail}</span>
       <span style={{ flex: 1 }} />
@@ -481,7 +481,7 @@ function VerdictCard({ v, q }) {
   );
 }
 
-function Scoreboard({ agg, total }) {
+function ScoreboardV2({ agg, total }) {
   return (
     <div style={{ border: "1px solid var(--border)", borderRadius: 5, padding: "10px 12px", marginTop: 6 }}>
       <div style={{ ...monoV2, fontSize: 13, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 7 }}>스코어보드 · 채점 {total}건</div>
