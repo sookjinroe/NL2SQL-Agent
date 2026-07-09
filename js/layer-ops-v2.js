@@ -91,12 +91,20 @@
              terms: slice.map(termLine), _hit: true };
   }
 
-  function search_terms({ query }) {
+  function search({ query }) {
     const nq = norm(query);
-    // 1) exact: 이름·유의어 완전 일치 (Term + metric)
+    // 1) exact: 이름·유의어 완전 일치 — 전수 수집.
+    // 같은 동의어가 복수 Term에 걸리는 것('개설일' = 계좌개설일·고객활성일)은
+    // 오류가 아니라 모호성 신호 — 전체 후보를 반환해 에이전트가 clarify로 가르게 한다.
     const exact = [];
-    if (termByName[nq]) exact.push({ kind: "term", ...termLine(termByName[nq]) });
-    if (metById[nq]) { const m = metById[nq]; exact.push({ kind: "metric", id: m.id, name: m.name, grain: m.grain, expr: m.expr, base_filters: m.base_filters, note: m.note }); }
+    for (const t of L.terms || []) {
+      if ([t.name, ...(t.synonyms || [])].some((k) => norm(k) === nq))
+        exact.push({ kind: "term", ...termLine(t) });
+    }
+    for (const m of L.metrics || []) {
+      if (norm(m.name) === nq || m.id === query)
+        exact.push({ kind: "metric", id: m.id, name: m.name, grain: m.grain, expr: m.expr, base_filters: m.base_filters, note: m.note });
+    }
     if (exact.length) return { match: "exact", results: exact, _hit: true };
     // 2) 유사도: bigram (Term + metric 통합)
     const qg = grams(query);
@@ -227,9 +235,10 @@
     }
   }
 
-  const OPS = { browse_terms, search_terms, get_column, resolve_code, get_join_path, try_sql };
+  const OPS = { browse_terms, search, get_column, resolve_code, get_join_path, try_sql };
 
   function call(op, args) {
+    if (op === "search_terms") op = "search";  // 구명 하위호환
     if (!OPS[op]) return { public: { error: `연산 '${op}' 없음. 가용: ${Object.keys(OPS).join(", ")}` }, raw: { _hit: false } };
     const raw = OPS[op](args || {});
     const pub = {}; for (const k in raw) if (!k.startsWith("_")) pub[k] = raw[k];
