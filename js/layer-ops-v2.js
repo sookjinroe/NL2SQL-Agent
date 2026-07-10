@@ -29,7 +29,10 @@
   function setExec(exec) { execSql = exec; }
 
   let termByName = {}, metById = {};
+  let tblGrain = {};
   function buildIndex() {
+    tblGrain = {};
+    for (const tb of (L && L.tables) || []) tblGrain[tb.name] = tb.grain || null;
     termByName = {}; metById = {};
     for (const t of L.terms || []) {
       termByName[norm(t.name)] = t;
@@ -128,6 +131,22 @@
       const best = score + incl;
       if (best > 0.3) scored.push({ s: best, r: { kind: "metric", id: m.id, name: m.name, grain: m.grain, expr: m.expr, base_filters: m.base_filters, note: m.note } });
     }
+    // 테이블 검색: 이름·grain 문구 매칭 — 차원 테이블(상품·지점 등)의 발견 경로.
+    // 고유명사 질의("주택대출")에서 에이전트가 차원 테이블의 존재를 확신할 근거를 제공
+    // (기준선 M12·PN01·PN03 9/9 실패의 도구 측 원인 보완, 2026-07-10)
+    for (const tb of L.tables || []) {
+      const hay = norm(tb.name + " " + (tb.grain || ""));
+      const tg = grams(tb.name + " " + (tb.grain || ""));
+      let n = 0;
+      for (const x of qg) if (tg.has(x)) n++;
+      const score = qg.size ? n / qg.size : 0;
+      const incl = hay.includes(nq) || nq.includes(norm(tb.name)) ? 0.5 : 0;
+      if (score + incl > 0.33) {
+        scored.push({ s: score + incl - 0.05,
+                      r: { kind: "table", name: tb.name, grain: tb.grain,
+                           columns_preview: (tb.columns || []).slice(0, 12) } });
+      }
+    }
     // 컬럼 검색: Term이 못 덮은 컬럼도 발견 가능하게 (id·description 매칭)
     // v2 설계 갭 보완 — Term 미등재 개념(예: 이자 복리 주기)의 유일한 접근 경로였던
     // search_columns를 제거했더니 "카탈로그에 없음 → 불가" 오판이 발생 (__14_ RV05)
@@ -140,11 +159,28 @@
       if (score > 0.5 || hay.includes(nq)) {
         scored.push({ s: score + (hay.includes(nq) ? 0.4 : 0),
                       r: { kind: "column", id: c.id, table: c.table,
+                           table_grain: (tblGrain[c.table] || null),
                            description: dtext.slice(0, 140) } });
       }
     }
     scored.sort((a, b) => b.s - a.s);
-    const top = scored.slice(0, 6).map((x) => x.r);
+    let top = scored.slice(0, 6).map((x) => x.r);
+    // 차원 엔터티 보장 포함: name/display_name 자산을 가진 Term은 고유명사 질의의
+    // 진입점이므로, 약한 매치라도 결과에서 누락시키지 않는다 (누락 시 에이전트가
+    // 차원 테이블의 존재를 확신하지 못해 clarify로 도피 — 기준선 M12·PN01·PN03).
+    const isDim = (t) => (t.assets || []).some((a) => /\.(name|display_name)$/.test(a));
+    for (const t of L.terms || []) {
+      if (!isDim(t)) continue;
+      if (top.some((r) => r.kind === "term" && r.name === t.name)) continue;
+      const kg = grams(t.name); let n = 0;
+      for (const x of kg) if (qg.has(x)) n++;
+      if ((kg.size ? n / kg.size : 0) > 0.2) top.push({ kind: "term", ...termLine(t) });
+    }
+    // 테이블 최고점 1개 보장: 상위 잘림으로 테이블이 항상 밀리면 발견 경로가 죽는다
+    if (!top.some((r) => r.kind === "table")) {
+      const bestTbl = scored.filter((x) => x.r.kind === "table").sort((a, b) => b.s - a.s)[0];
+      if (bestTbl) top.push(bestTbl.r);
+    }
     return top.length
       ? { match: "fuzzy", results: top, _hit: true }
       : { match: "none", results: [], note: "일치 없음. 지도를 다시 보거나 get_column으로 직접 접근하라.", _hit: false };
@@ -219,7 +255,7 @@
       const wrapped = `SELECT * FROM (${s.replace(/;\s*$/, "")}) __t LIMIT 51`;
       const res = await execSql(wrapped);
       if (!res || !res.length) return { ok: true, row_count: 0, cols: [], rows: [],
-        note: "0행 — 결과가 없다고 단정하기 전에 진단하라: 필터 조건·코드값·데이터 채움 상태 중 무엇이 원인인지 (여러 가설을 한 쿼리로: 상태별 × NULL여부 × 값존재 동시 집계).", _hit: true };
+        note: "0행. 두 갈래를 가려라 — (a) 조건에 맞는 행이 없다는 사실 자체가 답이다: 개수·존재 질문이면 바깥을 COUNT로 감싸 0이라는 값을 제출하라. (b) 내가 건 리터럴이 틀렸다: 이름·코드를 등호로 걸었다면 그 컬럼의 실제 값 목록(SELECT DISTINCT 또는 차원 테이블의 id, name 전체)을 조회해 표기를 확인하라. 판단이 어려우면 여러 가설을 한 쿼리로 동시 검증(상태별 × NULL여부 × 값존재 집계).", _hit: true };
       const { columns, values } = res[0];
       const rowCount = values.length > 50 ? "50+" : values.length;
       // 적응형: 저카디널리티 결과(진단 집계)는 전량, 대형 결과는 상위 3행
@@ -231,7 +267,12 @@
       if (values.length > take) out.note = `상위 ${take}행만 표시 (전체 ${rowCount}행)`;
       return out;
     } catch (e) {
-      return { ok: false, error: String(e.message || e), _hit: true };
+      let err = String(e.message || e);
+      // 오류 패턴별 교정 힌트 — 오류 시점에 다음 수를 안내 (재시도 포기·허위 사유 방지)
+      if (/ambiguous column name/i.test(err)) err += " — 힌트: 같은 이름이 여러 테이블에 있다. 테이블 별칭으로 한정하라 (예: l.column_name).";
+      else if (/no such column/i.test(err)) err += " — 힌트: 컬럼명이 정확하지 않다. get_column 또는 지도의 테이블 컬럼 목록으로 정확한 이름을 확인하라.";
+      else if (/no such table/i.test(err)) err += " — 힌트: 테이블명이 정확하지 않다. 지도의 테이블 목록에서 확인하라.";
+      return { ok: false, error: err, _hit: true };
     }
   }
 
