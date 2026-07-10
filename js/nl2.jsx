@@ -22,6 +22,7 @@ const CATLV2 = {
   review: "신뢰도 하향",
   conceptual: "개념 응축 (clarify)",
   analytic: "복합 분석",
+  targeted: "표적 (실패 클래스)",
   // 공통
   free: "자유 질의 (탐색)",
 };
@@ -370,7 +371,7 @@ function NLScreenV2() {
         <div style={{ paddingRight: 4, border: "1px solid var(--border)", borderRadius: 4, padding: "6px 10px" }}>
         {Array.from(new Set(Q.map((q) => q.cat))).sort((a, b) => {
           const O = { normal: 1, family: 2, granularity: 3, boundary: 4, join: 5,
-                      metric: 1, join_grain: 2, codedict: 3, time_format: 4, review: 5, conceptual: 6, analytic: 8, free: 99 };
+                      metric: 1, join_grain: 2, codedict: 3, time_format: 4, review: 5, conceptual: 6, analytic: 8, targeted: 9, free: 99 };
           return (O[a]||50) - (O[b]||50);
         }).map((cat) => (
           <div key={cat} style={{ marginTop: 14 }}>
