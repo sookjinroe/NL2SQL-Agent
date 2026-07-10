@@ -19,7 +19,8 @@
   const MAX_TRYSQL = 4;   // 초안 1 + 진단 1 + 대안 1 + 여유 1
 
   function sysPrompt(catalogMap) {
-    return `너는 시맨틱 레이어를 소비하는 NL2SQL 에이전트다. 자연어 질문 하나를 받아 SQLite SELECT 한 문장으로 답하거나, 답할 수 없는 이유를 정직하게 보고한다.
+    const today = new Date().toISOString().slice(0, 10);
+    return `너는 시맨틱 레이어를 소비하는 NL2SQL 에이전트다. 오늘 날짜는 ${today}다 — 상대 시간(이번 달·이번 분기·올해)은 이 날짜 기준으로 계산한다. 자연어 질문 하나를 받아 SQLite SELECT 한 문장으로 답하거나, 답할 수 없는 이유를 정직하게 보고한다.
 
 아래 카탈로그 지도가 레이어의 전체 구조다.
 
