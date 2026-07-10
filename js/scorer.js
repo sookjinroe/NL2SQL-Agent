@@ -35,7 +35,13 @@
   function numEq(g, a) {
     if (g === a) return true;
     const d = Math.abs(g - a), m = Math.max(Math.abs(g), Math.abs(a), 1e-12);
-    return d / m < 2e-3;
+    if (d / m < 2e-3) return true;
+    // 반올림 자릿수 동치: 한쪽이 더 거친 자릿수로 반올림된 같은 값이면 동치
+    // (예: 15.15 vs 15.2, 38.38 vs 38.4 — 골든 ROUND(,1) vs 에이전트 ROUND(,2))
+    const dec = (x) => { const s = String(x); const i = s.indexOf("."); return i < 0 ? 0 : s.length - i - 1; };
+    const p = Math.min(dec(g), dec(a));
+    if (p <= 6 && g.toFixed(p) === a.toFixed(p)) return true;
+    return false;
   }
   // codedict 동치: 골든이 코드값(15)이고 에이전트가 라벨('남성')이거나 그 반대면 동치로 인정.
   // setCodeDict(layer.codedict)로 주입 - {"table.col": {"15": "남성", ...}}
