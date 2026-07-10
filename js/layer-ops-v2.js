@@ -205,7 +205,7 @@
 
   const TRY_SQL_FULL_THRESHOLD = 20;  // 이하이면 전량 반환 (진단 쿼리는 저카디널리티 집계)
   const TRY_SQL_MAX_ROWS = 3;         // 초과 시 상위 3행만 (상세 리스트 쿼리)
-  function try_sql({ sql }) {
+  async function try_sql({ sql }) {
     if (!execSql) return { ok: false, error: "실행기 미주입 (앱 초기화 문제)", _hit: false };
     const s = String(sql || "").trim();
     if (!/^select\b/i.test(s)) return { ok: false, error: "SELECT만 허용", _hit: false };
@@ -217,7 +217,7 @@
     try {
       // LIMIT 강제: 외곽 래핑으로 원 쿼리 의미 보존하며 행 수만 제한
       const wrapped = `SELECT * FROM (${s.replace(/;\s*$/, "")}) __t LIMIT 51`;
-      const res = execSql(wrapped);
+      const res = await execSql(wrapped);
       if (!res || !res.length) return { ok: true, row_count: 0, cols: [], rows: [],
         note: "0행 — 결과가 없다고 단정하기 전에 진단하라: 필터 조건·코드값·데이터 채움 상태 중 무엇이 원인인지 (여러 가설을 한 쿼리로: 상태별 × NULL여부 × 값존재 동시 집계).", _hit: true };
       const { columns, values } = res[0];
@@ -237,10 +237,10 @@
 
   const OPS = { browse_terms, search, get_column, resolve_code, get_join_path, try_sql };
 
-  function call(op, args) {
+  async function call(op, args) {
     if (op === "search_terms") op = "search";  // 구명 하위호환
     if (!OPS[op]) return { public: { error: `연산 '${op}' 없음. 가용: ${Object.keys(OPS).join(", ")}` }, raw: { _hit: false } };
-    const raw = OPS[op](args || {});
+    const raw = await OPS[op](args || {});
     const pub = {}; for (const k in raw) if (!k.startsWith("_")) pub[k] = raw[k];
     return { public: pub, raw };
   }

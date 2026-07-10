@@ -135,8 +135,28 @@ function NLScreenV2() {
         const buf = await (await fetch(window.Dataset.dbPath())).arrayBuffer();
         dbRef.current = new SQL.Database(new Uint8Array(buf));
         window[dbKey] = dbRef.current;
+        window[dbKey + "_buf"] = buf;  // 워커 초기화용 원본 버퍼
       }
-      window.LayerOpsV2.init(window.Dataset.layer(), (sql) => dbRef.current.exec(sql));
+      // 에이전트 try_sql은 워커 스레드에서 실행 — 무거운 쿼리가 UI를 얼리지 않게.
+      // 채점·탐색기는 메인 dbRef 유지 (호출 빈도 낮음).
+      const wKey = "__DBW_" + window.Dataset.get();
+      if (!window[wKey]) {
+        const w = new Worker("js/db-worker.js?v=" + Date.now());
+        const pending = new Map(); let seq = 0;
+        w.onmessage = (ev) => { const p = pending.get(ev.data.id); if (p) { pending.delete(ev.data.id); p(ev.data); } };
+        const wcall = (type, payload) => new Promise((res) => { const id = ++seq; pending.set(id, res); w.postMessage({ id, type, ...payload }); });
+        const buf = window[dbKey + "_buf"] || (await (await fetch(window.Dataset.dbPath())).arrayBuffer());
+        const initR = await wcall("init", { buf: buf.slice(0) });
+        if (!initR.ok) throw new Error("워커 DB 초기화 실패: " + initR.error);
+        window[wKey] = {
+          exec: async (sql) => {
+            const r = await wcall("exec", { sql });
+            if (!r.ok) { const e = new Error(r.error); throw e; }
+            return r.result;
+          }
+        };
+      }
+      window.LayerOpsV2.init(window.Dataset.layer(), (sql) => window[wKey].exec(sql));
       if (window.Scorer.setCodeDict) window.Scorer.setCodeDict(window.Dataset.layer().codedict);
       setReady("ok");
     } catch (e) { setReady("err: " + (e.message || e)); }
