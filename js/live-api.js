@@ -9,6 +9,7 @@ window.LiveAPI = (function () {
   // 로컬 실행용: Pages에는 .env가 배포되지 않으므로(gitignore) 조용히 폴백.
   const ENV_READY = (async () => {
     try {
+      if (/github\.io$/.test(location.hostname)) return;  // Pages엔 .env가 없음 - 404 노이즈 방지
       const r = await fetch(".env", { cache: "no-store" });
       if (r.ok) {
         const t = await r.text();

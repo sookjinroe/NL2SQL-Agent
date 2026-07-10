@@ -392,6 +392,16 @@ function NLScreenV2() {
 }
 
 // ---- 스레드 ----
+// 모델 산출 방어: 문자열이 아닌 값(객체·배열)이 렌더에 들어오면 React가 크래시(#31).
+// Haiku가 assumptions/options를 [{interpretation, rationale}] 같은 객체로 낼 때가 있다.
+function sf(v) {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) return v.map(sf).join(" · ");
+  if (typeof v === "object") return Object.values(v).map(sf).join(" — ");
+  return String(v);
+}
+
 function ThreadV2({ q, r }) {
   if (!r) return null;
   return (
@@ -407,9 +417,9 @@ function ThreadV2({ q, r }) {
 
 function EventV2({ e, q }) {
   if (e.k === "think")
-    return <div style={{ borderLeft: "2px solid var(--med)", padding: "4px 12px", margin: "10px 0", fontSize: 15.5, color: "var(--muted)", fontStyle: "italic" }}>{e.text}</div>;
+    return <div style={{ borderLeft: "2px solid var(--med)", padding: "4px 12px", margin: "10px 0", fontSize: 15.5, color: "var(--muted)", fontStyle: "italic" }}>{sf(e.text)}</div>;
   if (e.k === "note")
-    return <div style={{ ...monoV2, fontSize: 13, color: "var(--dim)", margin: "6px 0" }}>· {e.text}</div>;
+    return <div style={{ ...monoV2, fontSize: 13, color: "var(--dim)", margin: "6px 0" }}>· {sf(e.text)}</div>;
   if (e.k === "op")
     return (
       <div style={{ border: "1px solid var(--border)", borderLeft: "2px solid var(--sig)", borderRadius: 5, padding: "9px 13px", margin: "10px 0", background: "rgba(0,0,0,0.22)" }}>
@@ -435,11 +445,11 @@ function FinalCardV2({ out, rows, err }) {
         최종 액션 · {out.action.toUpperCase()} {out.confidence ? `· ${out.confidence}` : ""}
       </div>
       {out.action === "sql" && <pre style={{ ...monoV2, fontSize: 15, whiteSpace: "pre-wrap", margin: 0, color: "var(--text)" }}>{out.sql}</pre>}
-      {out.action === "clarify" && (<div style={{ fontSize: 16 }}>{out.clarify_question}
-        {(out.options || []).map((o, i) => <span key={i} style={{ ...monoV2, fontSize: 14, border: "1px solid var(--border)", borderRadius: 4, padding: "1px 8px", marginLeft: 7 }}>{o}</span>)}</div>)}
-      {out.action === "cannot_answer" && <div style={{ fontSize: 16, color: "var(--muted)" }}>{out.reason}</div>}
+      {out.action === "clarify" && (<div style={{ fontSize: 16 }}>{sf(out.clarify_question)}
+        {(out.options || []).map((o, i) => <span key={i} style={{ ...monoV2, fontSize: 14, border: "1px solid var(--border)", borderRadius: 4, padding: "1px 8px", marginLeft: 7 }}>{sf(o)}</span>)}</div>)}
+      {out.action === "cannot_answer" && <div style={{ fontSize: 16, color: "var(--muted)" }}>{sf(out.reason)}</div>}
       {(out.assumptions || []).length > 0 &&
-        <div style={{ ...monoV2, fontSize: 14, color: "var(--med)", marginTop: 7 }}>가정: {out.assumptions.join(" · ")}</div>}
+        <div style={{ ...monoV2, fontSize: 14, color: "var(--med)", marginTop: 7 }}>가정: {sf(out.assumptions)}</div>}
       {err && <div style={{ ...monoV2, fontSize: 14, color: "var(--low)", marginTop: 7 }}>실행 오류: {err}</div>}
       {rows && <ResultTableV2 rows={rows} />}
     </div>
