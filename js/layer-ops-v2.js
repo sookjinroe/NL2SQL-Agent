@@ -174,7 +174,9 @@
       if (top.some((r) => r.kind === "term" && r.name === t.name)) continue;
       const kg = grams(t.name); let n = 0;
       for (const x of kg) if (qg.has(x)) n++;
-      if ((kg.size ? n / kg.size : 0) > 0.2) top.push({ kind: "term", ...termLine(t) });
+      if ((kg.size ? n / kg.size : 0) > 0.2)
+        top.push({ kind: "term", ...termLine(t),
+                   note: "질의의 고유명사가 이 차원의 이름 값(상품명·지점명·직원명 등)일 수 있다 — 해당 차원 테이블의 name 실제 값을 실측 조회로 확인하라." });
     }
     // 테이블 최고점 1개 보장: 상위 잘림으로 테이블이 항상 밀리면 발견 경로가 죽는다
     if (!top.some((r) => r.kind === "table")) {
@@ -224,10 +226,13 @@
     }
     if (!adj[table_a] && !(L.tables || []).some((t) => t.name === table_a))
       return { error: `테이블 '${table_a}' 없음`, _hit: false };
-    const queue = [[table_a, []]]; const seen = new Set([table_a]); const paths = [];
-    while (queue.length && paths.length < 3) {
+    // 경로 다양성: 같은 중간 테이블 경유의 유사 변형(예: 제출자·거절자·철회자 userid)이
+    // 상한을 선점해 정상 경로(도메인 FK 경유)가 잘리던 결함 수정 (__21_ PN04:
+    // m_office↔m_savings_account에서 m_client.client_id 경로가 m_appuser 변형 3개에 밀림)
+    const queue = [[table_a, []]]; const seen = new Set([table_a]); const rawPaths = [];
+    while (queue.length && rawPaths.length < 12) {
       const [cur, path] = queue.shift();
-      if (cur === table_b && path.length) { paths.push(path.map((e) => `${e.from} = ${e.to}`)); continue; }
+      if (cur === table_b && path.length) { rawPaths.push(path); continue; }
       if (path.length >= 4) continue;
       for (const nx of adj[cur] || []) {
         if (seen.has(nx.to) && nx.to !== table_b) continue;
@@ -235,8 +240,19 @@
         queue.push([nx.to, [...path, nx.via]]);
       }
     }
-    return paths.length ? { paths, _hit: true }
-                        : { paths: [], note: "FK 경로 없음 — 두 테이블이 그래프상 연결되지 않음", _hit: false };
+    const sigOf = (p) => p.flatMap((e) => [e.from.split(".")[0], e.to.split(".")[0]])
+      .filter((t) => t !== table_a && t !== table_b)
+      .sort().join(">") || "(직접)";
+    const bySig = new Map(); let folded = 0;
+    for (const p of rawPaths) {
+      const s = sigOf(p);
+      if (!bySig.has(s)) bySig.set(s, p); else folded++;
+    }
+    const paths = [...bySig.values()].slice(0, 4).map((p) => p.map((e) => `${e.from} = ${e.to}`));
+    const out = paths.length ? { paths, _hit: true }
+                             : { paths: [], note: "FK 경로 없음 — 두 테이블이 그래프상 연결되지 않음", _hit: false };
+    if (folded > 0) out.note = `같은 중간 테이블을 경유하는 유사 변형 ${folded}개 생략 (첫 경로만 표시). 경로가 여럿이면 질문의 의미(소속·담당·처리자 중 무엇)에 맞는 FK를 골라라.`;
+    return out;
   }
 
   const TRY_SQL_FULL_THRESHOLD = 20;  // 이하이면 전량 반환 (진단 쿼리는 저카디널리티 집계)
