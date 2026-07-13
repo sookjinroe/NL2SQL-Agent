@@ -15,10 +15,12 @@
   const EXCLUDED_CODE_COLS = ["CHNL_CD", "CNTC_TYPE_CD"];
 
   // ---- SQL 실행 (exec: sql.js Database.exec 래퍼를 주입받음) ----
-  function runSql(db, sql) {
+  // db 인자는 (a) sql.js Database 객체(동기) 또는 (b) async exec 함수(워커) 모두 허용.
+  // 채점 SQL이 메인 스레드를 점유해 동시 실행 시 UI가 수 초 멈추던 문제의 해소 경로 (2026-07-10).
+  async function runSql(db, sql) {
     const s = sql.trim().replace(/;+\s*$/, "");
     if (!/^select\b/i.test(s)) throw new Error("SELECT만 허용");
-    const res = db.exec(s);
+    const res = await (typeof db === "function" ? db(s) : db.exec(s));
     if (!res.length) return [];
     const { columns, values } = res[0];
     return values.map((v) => { const o = {}; columns.forEach((c, i) => (o[c] = v[i])); return o; });
@@ -112,7 +114,7 @@
   // ---- 본채점 ----
   // agentOut: {action, sql?, clarify_question?, options?, reason?, assumptions?, confidence?}
   // trace: {ops:[{op,args,hit}], turns}
-  function score(db, q, agentOut, trace) {
+  async function score(db, q, agentOut, trace) {
     const r = { id: q.id, cat: q.cat, verdict: "wrong", flags: [], detail: "", ops_recall: 0, n_ops: 0 };
     const ops = (trace && trace.ops) || [];
     r.n_ops = ops.length;
@@ -129,10 +131,10 @@
         if (A.action !== "sql" || !A.sql) { r.detail = `SQL 기대, ${A.action || "무응답"} 수신`; return r; }
         const hall = detectHallucination(A.sql);
         if (hall.length) { r.flags.push("hallucination"); r.detail = hall.join("; "); return r; }
-        const got = runSql(db, A.sql);
+        const got = await runSql(db, A.sql);
         const goldens = [q.golden.sql, ...((q.golden.alternatives || []).map((a) => a.sql))];
         for (const gs of goldens) {
-          if (sameResult(got, runSql(db, gs))) { r.verdict = "correct"; r.detail = "실행 결과 일치"; return r; }
+          if (sameResult(got, await runSql(db, gs))) { r.verdict = "correct"; r.detail = "실행 결과 일치"; return r; }
         }
         r.detail = "실행 결과 불일치";
         return r;
@@ -142,8 +144,11 @@
         if (A.action === "sql" && A.sql) {
           const hall = detectHallucination(A.sql);
           if (hall.length) { r.flags.push("hallucination"); r.detail = hall.join("; "); return r; }
-          const got = runSql(db, A.sql);
-          const hit = q.golden.interpretations.find((i) => sameResult(got, runSql(db, i.sql)));
+          const got = await runSql(db, A.sql);
+          let hit = null;
+          for (const i of q.golden.interpretations) {
+            if (sameResult(got, await runSql(db, i.sql))) { hit = i; break; }
+          }
           if (hit && (A.assumptions || []).length) {
             r.verdict = "partial"; r.detail = `가정 명시 + '${hit.label}' 일치 (D8 부분)`; return r;
           }
@@ -159,8 +164,8 @@
           if (hall.length) { r.flags.push("hallucination"); r.detail = hall.join("; "); return r; }
           // B03(폴백 가능) / B02(코드 그대로 제시): world_truth 일치 + 신뢰도 한정 시 인정
           if (q.golden.world_truth) {
-            const got = runSql(db, A.sql);
-            if (sameResult(got, runSql(db, q.golden.world_truth.sql))) {
+            const got = await runSql(db, A.sql);
+            if (sameResult(got, await runSql(db, q.golden.world_truth.sql))) {
               const caveated = (A.confidence && A.confidence !== "HIGH") || (A.assumptions || []).length;
               r.verdict = caveated ? "correct" : "partial";
               r.detail = caveated ? "세계 진실 일치 + 신뢰도 한정" : "일치하나 무한정 단정 (부분)";

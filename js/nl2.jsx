@@ -204,8 +204,11 @@ function NLScreenV2() {
       try { execRows = window.Scorer.runSql(dbRef.current, out.final.sql); }
       catch (e) { execErr = String(e.message || e); }
     }
+    // 채점 SQL도 워커에서 - 무거운 골든(다중 조인 집계)이 메인을 점유해
+    // 동시 실행 시 UI가 멈추던 문제 해소. dbRef는 탐색기 등 저빈도 경로만.
+    const wExec = window["__DBW_" + window.Dataset.get()];
     const verdict = q.golden
-      ? window.Scorer.score(dbRef.current, q, out.final, { ops: out.opsTrace })
+      ? await window.Scorer.score(wExec ? wExec.exec : dbRef.current, q, out.final, { ops: out.opsTrace })
       : { id: q.id, cat: q.cat || "free", verdict: "n/a", flags: [], detail: "골든 없음 (탐색 실행)", ops_recall: null, n_ops: out.opsTrace.length };
     push({ k: "final", out: out.final, execRows, execErr });
     push({ k: "verdict", v: verdict });
@@ -228,7 +231,7 @@ function NLScreenV2() {
     followRef.current = true; runAllRef.current = false;
   }
 
-  function harnessSelfCheck() {
+  async function harnessSelfCheck() {
     // oracle 재생 — 브라우저에서도 채점기 100%인지 (node 검증의 현장 재확인)
     let ok = 0;
     for (const q of Q) {
@@ -238,7 +241,7 @@ function NLScreenV2() {
       else out = q.id === "B03" && q.golden.world_truth
         ? { action: "sql", sql: q.golden.world_truth.sql, assumptions: ["폴백"], confidence: "MEDIUM" }
         : { action: "cannot_answer", reason: "근거 없음" };
-      const r = window.Scorer.score(dbRef.current, q, out, { ops: (q.expected_ops || []).map((op) => ({ op, hit: true })) });
+      const r = await window.Scorer.score(dbRef.current, q, out, { ops: (q.expected_ops || []).map((op) => ({ op, hit: true })) });
       if (r.verdict === "correct") ok++;
     }
     setSelfCheck(`oracle ${ok}/${Q.length}` + (ok === Q.length ? " ✓" : " ✗ 하니스 점검 필요"));
