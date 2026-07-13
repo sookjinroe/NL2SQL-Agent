@@ -122,6 +122,7 @@ function NLScreenV2() {
   const runningRef = n2UseRef(null);  // 현재 실행 중 문항 id
   const isFree = window.Dataset.isFree();
   const [freeQs, setFreeQs] = n2UseState([]);   // fineract 자유 질의 목록 (골든셋과 병존)
+  const [analystMode, setAnalystMode] = n2UseState(false);  // 실험: 분석 계약(agent-analyst-v0)으로 실행
   const [freeInput, setFreeInput] = n2UseState("");
   const goldens = window.Dataset.questions();
   const Q = isFree ? [...goldens, ...freeQs] : goldens;
@@ -189,7 +190,9 @@ function NLScreenV2() {
       else if (e.type === "note") push({ k: "note", text: e.text });
     };
 
-    const out = await window.AgentCoreV2.runAgentV2({
+    // 실험: 분석 계약(agent-analyst-v0) — 자유 질의 전용, 기존 v2 계약 무접촉
+    const runner = q.mode === "analyst" ? window.AgentAnalystV0.run : window.AgentCoreV2.runAgentV2;
+    const out = await runner({
       question: q.text,
       complete: (s, u) => window.LiveAPI.complete(s, u, { onRetry: (a, d) => setNote(`재시도 ${a}회…`) }),
       layerCall: window.LayerOpsV2.call,
@@ -201,7 +204,7 @@ function NLScreenV2() {
     // 최종 액션 카드 + (sql이면) 실행
     let execRows = null, execErr = null;
     if (out.final.action === "sql" && out.final.sql) {
-      try { execRows = window.Scorer.runSql(dbRef.current, out.final.sql); }
+      try { execRows = await window.Scorer.runSql(dbRef.current, out.final.sql); }
       catch (e) { execErr = String(e.message || e); }
     }
     // 채점 SQL도 워커에서 - 무거운 골든(다중 조인 집계)이 메인을 점유해
@@ -321,14 +324,19 @@ function NLScreenV2() {
             <div style={{ display: "flex", gap: 6 }}>
               <input value={freeInput} onChange={(e) => setFreeInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && freeInput.trim() && !busy) {
-                  const q = { id: "F" + String(freeQs.length + 1).padStart(2, "0"), cat: "free", text: freeInput.trim(), mode: "free", golden: null, expected_ops: [] };
+                  const q = { id: "F" + String(freeQs.length + 1).padStart(2, "0"), cat: "free", text: freeInput.trim(),
+                               mode: analystMode ? "analyst" : "free", golden: null, expected_ops: [] };
                   setFreeQs((p) => [...p, q]); setFreeInput("");
                   // 리렌더 후 실행 - Q 배열에 q가 포함된 상태에서 setActive 되도록
                   requestAnimationFrame(() => requestAnimationFrame(() => runOne(q, true)));
                 }}}
-                placeholder="질문 입력 후 Enter (예: 활성 고객이 몇 명이야?)"
+                placeholder={analystMode ? "분석 목적 입력 후 Enter (예: 지난 분기 대출 실적을 분석해줘)" : "질문 입력 후 Enter (예: 활성 고객이 몇 명이야?)"}
                 style={{ flex: 1, padding: "8px 10px", background: "var(--panel)", border: "1px solid var(--border)",
                          borderRadius: 6, color: "var(--text)", fontSize: 14 }} />
+              <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13.5, color: analystMode ? "var(--accent)" : "var(--muted)", cursor: "pointer", whiteSpace: "nowrap" }}>
+                <input type="checkbox" checked={analystMode} onChange={(e) => setAnalystMode(e.target.checked)} />
+                분석 (실험)
+              </label>
             </div>
           </div>
         )}
@@ -462,7 +470,7 @@ function EventV2({ e, q }) {
 }
 
 function FinalCardV2({ out, rows, err }) {
-  const tone = out.action === "sql" ? "var(--accent)" : out.action === "clarify" ? "var(--med)" : "var(--dim)";
+  const tone = out.action === "sql" ? "var(--accent)" : out.action === "report" ? "var(--high, var(--accent))" : out.action === "clarify" ? "var(--med)" : "var(--dim)";
   return (
     <div style={{ border: `1px solid ${tone}55`, borderLeft: `2px solid ${tone}`, borderRadius: 5, padding: "11px 14px", margin: "14px 0" }}>
       <div style={{ ...monoV2, fontSize: 13, color: tone, letterSpacing: "0.06em", marginBottom: 7 }}>
@@ -472,6 +480,26 @@ function FinalCardV2({ out, rows, err }) {
       {out.action === "clarify" && (<div style={{ fontSize: 16 }}>{sf(out.clarify_question)}
         {(out.options || []).map((o, i) => <span key={i} style={{ ...monoV2, fontSize: 14, border: "1px solid var(--border)", borderRadius: 4, padding: "1px 8px", marginLeft: 7 }}>{sf(o)}</span>)}</div>)}
       {out.action === "cannot_answer" && <div style={{ fontSize: 16, color: "var(--muted)" }}>{sf(out.reason)}</div>}
+      {out.action === "report" && (
+        <div>
+          <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 4 }}>{sf(out.title)}</div>
+          {out.basis && <div style={{ ...monoV2, fontSize: 13.5, color: "var(--med)", marginBottom: 10 }}>기준: {sf(out.basis)}</div>}
+          {(out.sections || []).map((s, i) => (
+            <div key={i} style={{ margin: "10px 0", paddingLeft: 10, borderLeft: "2px solid var(--border)" }}>
+              <div style={{ fontSize: 14.5, fontWeight: 600, color: "var(--text)" }}>
+                {sf(s.heading)}
+                {(out._unverified_sections || []).includes(s.heading) &&
+                  <span style={{ ...monoV2, fontSize: 12, color: "var(--low)", marginLeft: 7 }}>미실측</span>}
+              </div>
+              <div style={{ fontSize: 15, margin: "3px 0" }}>{sf(s.finding)}</div>
+              {s.sql && <pre style={{ ...monoV2, fontSize: 12.5, whiteSpace: "pre-wrap", margin: "4px 0 0", color: "var(--dim)" }}>{s.sql}</pre>}
+            </div>
+          ))}
+          {out.summary && <div style={{ fontSize: 15.5, marginTop: 12, padding: "9px 11px", background: "var(--panel)", borderRadius: 5 }}>{sf(out.summary)}</div>}
+          {(out.caveats || []).length > 0 &&
+            <div style={{ ...monoV2, fontSize: 13.5, color: "var(--med)", marginTop: 8 }}>주의: {sf(out.caveats)}</div>}
+        </div>
+      )}
       {(out.assumptions || []).length > 0 &&
         <div style={{ ...monoV2, fontSize: 14, color: "var(--med)", marginTop: 7 }}>가정: {sf(out.assumptions)}</div>}
       {err && <div style={{ ...monoV2, fontSize: 14, color: "var(--low)", marginTop: 7 }}>실행 오류: {err}</div>}
