@@ -66,8 +66,18 @@
       parts.push(line);
     }
     // 정본 지표 — 규모가 커져도 수십 개 상한이므로 항상 전체 상주
-    parts.push(``, `[정본 지표 — ${(L.metrics || []).length}개. 비율·총액·평균 질문은 여기 있으면 반드시 이 정의를 따를 것]`);
-    for (const m of L.metrics || []) parts.push(`${m.id} = ${m.name} | grain: ${m.grain} | 정의식: ${m.expr} | 기준: ${(m.base_filters || []).join("; ")}${m.note ? " | " + m.note : ""}`);
+    parts.push(``, `[정본 지표 — ${(L.metrics || []).length}개. 비율·총액·평균 질문은 해당 지표가 있으면 반드시 그 정의를 따를 것.`,
+               ` 각 지표의 기준은 그 지표에만 적용된다 — 다른 지표나 일반 질문에 이식하지 마라.]`);
+    // 지표당 3줄 블록 + 빈 줄 구분: 유사한 기준 문구(예: "실행된 대출 300,600,601,700")가
+    // 여러 지표에 반복될 때 한 줄 나열이 옆 지표 기준과의 시각 혼합을 유발했음
+    // (BD05: M_LOAN_REMAINING의 ACTIVE(300) 기준을 3회 연속 옆 지표들의 기준으로 오독)
+    for (const m of L.metrics || []) {
+      parts.push(``,
+        `── ${m.id} (${m.name}) · grain: ${m.grain} ──`,
+        `   정의식: ${m.expr}`,
+        `   [${m.id} 기준] ${(m.base_filters || []).join(" · ") || "(없음)"}`);
+      if (m.note) parts.push(`   주의: ${m.note}`);
+    }
     // 테이블 grain
     const tbls = (L.tables || []).filter((t) => t.grain);
     parts.push(``, `[테이블 grain — ${tbls.length}개. 조인·집계 전 grain을 확인해 팬아웃을 방지할 것]`);
