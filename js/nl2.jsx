@@ -21,12 +21,38 @@ const CATLV2 = {
   time_format: "시간·형식",
   review: "신뢰도 하향",
   analyst: "분석 (실험)",
+};
+
+// 분석 에이전트 확인 질문 프리셋 — v0.3 시각(V1~V5)·장치별 표적. note = 관찰 포인트.
+const ANALYST_PRESETS = [
+  { id: "A01", text: "지난 분기 대출 실적을 분석해줘",
+    note: "V2 추세 맥락 — 한 점 대비가 아니라 추세 가속으로 해석하는지 · 계획 완주 · compute 배치" },
+  { id: "A02", text: "상품별로 대출 현황을 비교 분석해줘",
+    note: "팬아웃 경고 실전 — 회차 조인 SUM에서 경고가 뜨고 쿼리를 고치는지 (구 7970% 자리)" },
+  { id: "A03", text: "대구지점 연체율이 왜 높은지 분석해줘",
+    note: "V1 전제 검증 — 실측상 노이즈(z≈0.3). 원인 서사를 지어내는지, '높지 않음' 판정으로 답하는지" },
+  { id: "A04", text: "지점별 연체율을 분석해줘. 특이한 지점이 있으면 원인도 파봐줘",
+    note: "V4 발견 주도 — 특이 판정의 근거(우연 변동 대비)와 심화 여부" },
+  { id: "A05", text: "올해 대출 포트폴리오의 건전성을 분석해줘",
+    note: "V5 값+신뢰조건 — 지표 3종을 각자 기준대로 · 집중(주택 95%)·미성숙(77%) 구조를 짚는지" },
+  { id: "A06", text: "이번 달 경영 하이라이트 뽑아줘",
+    note: "V5 관례 스코프 자가 설정 + 일할 경계표 소비 (전월 동일 일수 비교)" },
+  { id: "A07", text: "저축 계좌 현황을 요약해줘",
+    note: "도메인 교차 — SAVINGS 용어·지표로 계획 · 상태 코드 갭(700·800)을 정직하게 다루는지" },
+  { id: "A08", text: "실적 정리해줘",
+    note: "clarify 질 요건 — 대상 미정. 옵션이 각각 어떤 분석을 낳는지 제시하는지 (자가 스코프도 인정)" },
+  { id: "A09", text: "활성 고객이 몇 명이야?",
+    note: "단답 폴백 — 리포트 강박 없이 sql 한 방으로 내려오는지" },
+].map((p) => ({ ...p, cat: "analyst", mode: "analyst", golden: null, expected_ops: [] }));
+
+const _CATLV2_TAIL = {
   conceptual: "개념 응축 (clarify)",
   analytic: "복합 분석",
   targeted: "표적 (실패 클래스)",
   // 공통
   free: "자유 질의 (탐색)",
 };
+Object.assign(CATLV2, _CATLV2_TAIL);  // 프리셋 상수 삽입으로 갈라진 라벨 맵 병합
 const monoV2 = { fontFamily: "var(--monoV2)" };
 const sleepV2 = (ms) => new Promise((r) => setTimeout(r, ms));
 const NL_MARKER_COLORV2 = { "함정":"var(--low)", "경계":"var(--med)", "D8":"var(--sig)",
@@ -124,7 +150,7 @@ function NLScreenV2({ variant }) {
   const followRef = n2UseRef(true);  // 전체 실행 중 진행 문항 자동 추적 (사용자 수동 선택 시 false)
   const runningRef = n2UseRef(null);  // 현재 실행 중 문항 id
   const isFree = window.Dataset.isFree();
-  const [freeQs, setFreeQs] = n2UseState([]);   // fineract 자유 질의 목록 (골든셋과 병존)
+  const [freeQs, setFreeQs] = n2UseState(isAnalyst ? ANALYST_PRESETS : []);   // 분석 탭은 표적 프리셋으로 시작
   // 분석 계약은 전용 탭(variant="analyst")으로 승격 — 체크박스 토글 제거 (2026-07-14)
   const [freeInput, setFreeInput] = n2UseState("");
   const goldens = window.Dataset.questions();
@@ -464,7 +490,9 @@ function ThreadV2({ q, r }) {
     <div style={{ maxWidth: 860 }}>
       <div style={{ ...monoV2, fontSize: 13, color: "var(--muted)" }}>{q.id} · {CATLV2[q.cat] || q.cat}
         {r.elapsed_ms != null && <span> · {(r.elapsed_ms / 1000).toFixed(1)}s · {r.turns || "?"}턴</span>}</div>
-      <div style={{ fontSize: 20.5, fontWeight: 600, margin: "6px 0 18px" }}>{q.text}</div>
+      <div style={{ fontSize: 20.5, fontWeight: 600, margin: "6px 0 6px" }}>{q.text}</div>
+      {q.note && <div style={{ fontSize: 13.5, color: "var(--dim)", margin: "0 0 16px" }}>관찰: {q.note}</div>}
+      {!q.note && <div style={{ margin: "0 0 12px" }} />}
       {(r.events || []).map((e, i) => <EventV2 key={i} e={e} q={q} />)}
       {r.status === "running" && <div style={{ ...monoV2, fontSize: 14.5, color: "var(--sig)", animation: "pulse 1s infinite" }}>실행 중…</div>}
     </div>
