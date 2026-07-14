@@ -70,7 +70,9 @@ window.LiveAPI = (function () {
       try {
         const resp = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST", headers,
-          body: JSON.stringify({ model: getModel(), max_tokens: 1000,
+          // max_tokens 기본 1000 (단일 질문 계약 v2 기준). 분석 계약(analyst)의
+          // 다섹션 report JSON은 1000을 넘어 잘림 → 파싱 실패 (__29_ F02 실증) - opts로 상향.
+          body: JSON.stringify({ model: getModel(), max_tokens: (opts && opts.maxTokens) || 1000,
             // system 블록 캐싱: 카탈로그 지도가 질의 간 불변이라 두 번째 턴부터 캐시 히트
             system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
             messages: [{ role: "user", content: user }] }),

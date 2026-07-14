@@ -194,7 +194,8 @@ function NLScreenV2() {
     const runner = q.mode === "analyst" ? window.AgentAnalystV0.run : window.AgentCoreV2.runAgentV2;
     const out = await runner({
       question: q.text,
-      complete: (s, u) => window.LiveAPI.complete(s, u, { onRetry: (a, d) => setNote(`재시도 ${a}회…`) }),
+      complete: (s, u) => window.LiveAPI.complete(s, u, { onRetry: (a, d) => setNote(`재시도 ${a}회…`),
+                                                          maxTokens: q.mode === "analyst" ? 3000 : undefined }),
       layerCall: window.LayerOpsV2.call,
       catalogMap: window.LayerOpsV2.buildMap(),
       onEvent,
