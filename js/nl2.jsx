@@ -20,6 +20,7 @@ const CATLV2 = {
   codedict: "코드값 사전",
   time_format: "시간·형식",
   review: "신뢰도 하향",
+  analyst: "분석 (실험)",
   conceptual: "개념 응축 (clarify)",
   analytic: "복합 분석",
   targeted: "표적 (실패 클래스)",
@@ -396,7 +397,7 @@ function NLScreenV2({ variant }) {
         }).map((cat) => (
           <div key={cat} style={{ marginTop: 14 }}>
             <div style={{ ...monoV2, fontSize: 13, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 6 }}>
-              {CATLV2[cat].toUpperCase()}
+              {(CATLV2[cat] || cat).toUpperCase()}
             </div>
             {Q.filter((q) => q.cat === cat).map((q) => (
               <QuestionRowV2 key={q.id} q={q} r={results[q.id]} active={active === q.id} busy={busy}
@@ -447,7 +448,7 @@ function ThreadV2({ q, r }) {
   if (!r) return null;
   return (
     <div style={{ maxWidth: 860 }}>
-      <div style={{ ...monoV2, fontSize: 13, color: "var(--muted)" }}>{q.id} · {CATLV2[q.cat]}
+      <div style={{ ...monoV2, fontSize: 13, color: "var(--muted)" }}>{q.id} · {CATLV2[q.cat] || q.cat}
         {r.elapsed_ms != null && <span> · {(r.elapsed_ms / 1000).toFixed(1)}s · {r.turns || "?"}턴</span>}</div>
       <div style={{ fontSize: 20.5, fontWeight: 600, margin: "6px 0 18px" }}>{q.text}</div>
       {(r.events || []).map((e, i) => <EventV2 key={i} e={e} q={q} />)}
