@@ -31,6 +31,28 @@
     return null;
   }
 
+  // 큰 수치의 한글 단위 환산 힌트 — __32_ A02 실증: 에이전트가 609.1억(6.09e10)을
+  // "60.9조"로 서술 (×1000 오환산). 환산을 모델에게 맡기지 않고 시스템이 계산해 동봉.
+  function unitHints(rows) {
+    if (!rows || !rows.length) return null;
+    var hints = [];
+    var seen = {};
+    for (var i = 0; i < Math.min(rows.length, 8); i++) {
+      for (var k in rows[i]) {
+        var v = rows[i][k];
+        if (typeof v === "number" && Math.abs(v) >= 1e8 && !seen[k]) {
+          seen[k] = true;
+          var eok = v / 1e8;
+          var disp = Math.abs(eok) >= 10000 ? (eok / 10000).toFixed(1) + "조" : eok.toFixed(1) + "억";
+          hints.push(k + "=" + v + " ≈ " + disp);
+          if (hints.length >= 4) break;
+        }
+      }
+      if (hints.length >= 4) break;
+    }
+    return hints.length ? "단위 환산(시스템 계산 — 서술에 이 값을 그대로 써라): " + hints.join(" · ") : null;
+  }
+
   // execSync: (sql) => sql.js exec 결과 [{columns, values}] (동기)
   function runCompute(execSync, code, opts) {
     opts = opts || {};
@@ -56,6 +78,7 @@
       if (!/^(SELECT|WITH)\b/i.test(s)) throw new Error("SELECT/WITH만 허용: " + s.slice(0, 60));
       var fn = fanoutCheck(s, opts.childTables);
       if (fn && notes.indexOf(fn) < 0) notes.push(fn);
+      // (환산 힌트는 rows 변환 후 아래에서)
       var res = execSync(s);
       if (!res || !res.length) return [];
       var cols = res[0].columns, vals = res[0].values;
@@ -66,6 +89,8 @@
         for (var c = 0; c < cols.length; c++) o[cols[c]] = vals[r][c];
         rows.push(o);
       }
+      var uh = unitHints(rows);
+      if (uh && notes.indexOf(uh) < 0) notes.push(uh);
       return rows;
     }
 
@@ -79,5 +104,5 @@
     }
   }
 
-  return { runCompute: runCompute, fanoutCheck: fanoutCheck };
+  return { runCompute: runCompute, fanoutCheck: fanoutCheck, unitHints: unitHints };
 });
