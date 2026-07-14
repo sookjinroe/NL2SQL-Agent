@@ -41,9 +41,29 @@ window.LiveAPI = (function () {
   function stripFence(t) {
     return t.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
   }
-  function parseJson(text) {
-    const t = stripFence(text);
+  // repair: 문자열 리터럴 내부의 생(raw) 개행을 \n으로 이스케이프해 재시도.
+  // __34_ A04 실증: compute의 code 필드에 멀티라인 코드를 생 개행으로 써서
+  // 파싱 3회 실패 → cannot_answer. analyst 경로에서만 켠다 (v2 파이프라인 불변).
+  function repairRawNewlines(t) {
+    let out = "", inStr = false, esc = false;
+    for (let i = 0; i < t.length; i++) {
+      const ch = t[i];
+      if (esc) { out += ch; esc = false; continue; }
+      if (ch === "\\") { out += ch; esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; out += ch; continue; }
+      if (inStr && (ch === "\n" || ch === "\r")) { out += ch === "\n" ? "\\n" : ""; continue; }
+      out += ch;
+    }
+    return out;
+  }
+  function parseJson(text, repair) {
+    let t = stripFence(text);
     try { return JSON.parse(t); } catch (e) {}
+    if (repair) {
+      const t2 = repairRawNewlines(t);
+      try { const v = JSON.parse(t2); return v; } catch (e) {}
+      t = t2;  // 균형 파서도 복구본 위에서
+    }
     const s = t.indexOf("{");
     if (s >= 0) {
       // 문자열 리터럴 내부의 중괄호를 무시하는 균형 파서 (__30_ F01: SQL·문장 속
@@ -88,7 +108,7 @@ window.LiveAPI = (function () {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
         const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
-        return parseJson(text);
+        return parseJson(text, opts && opts.repairJson);
       } catch (e) {
         lastErr = e;
         const delay = 800 * Math.pow(2, attempt - 1);
