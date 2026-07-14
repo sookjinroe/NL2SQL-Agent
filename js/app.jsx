@@ -10,7 +10,7 @@ const { useState: aUseState } = React;
 function AppShell() {
   const [tab, setTab] = aUseState("intro");
   const [model, setModelState] = aUseState(window.LiveAPI.getModel());
-  const tabs = [["intro", "소개"], ["agent2", "NL 에이전트"], ["explorer", "데이터 탐색"]];
+  const tabs = [["intro", "소개"], ["agent2", "NL 에이전트"], ["analyst", "분석 에이전트"], ["explorer", "데이터 탐색"]];
   return (
     <div>
       <div style={{ display: "flex", gap: 4, padding: "10px 16px 0", borderBottom: "1px solid var(--border)", alignItems: "flex-end" }}>
@@ -34,6 +34,7 @@ function AppShell() {
       </div>
       {tab === "intro" && <window.NLIntro />}
       <div style={{ display: tab === "agent2" ? "block" : "none" }}><window.NLScreenV2 /></div>
+      <div style={{ display: tab === "analyst" ? "block" : "none" }}><window.NLScreenV2 variant="analyst" /></div>
       {tab === "explorer" && <window.ExplorerScreen />}
     </div>
   );

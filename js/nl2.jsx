@@ -107,7 +107,9 @@ function NLMarkerChipV2({ m }) {
     </span>);
 }
 
-function NLScreenV2() {
+function NLScreenV2({ variant }) {
+  // variant: undefined = 골든+자유 질의 / "analyst" = 분석 에이전트 전용 탭
+  const isAnalyst = variant === "analyst";
   const [ready, setReady] = n2UseState(null);     // null=로딩, 'ok', 'err:...'
   const [results, setResults] = n2UseState({});   // qid → {status, events, final, verdict, execRows}
   const [active, setActive] = n2UseState(null);
@@ -122,10 +124,10 @@ function NLScreenV2() {
   const runningRef = n2UseRef(null);  // 현재 실행 중 문항 id
   const isFree = window.Dataset.isFree();
   const [freeQs, setFreeQs] = n2UseState([]);   // fineract 자유 질의 목록 (골든셋과 병존)
-  const [analystMode, setAnalystMode] = n2UseState(false);  // 실험: 분석 계약(agent-analyst-v0)으로 실행
+  // 분석 계약은 전용 탭(variant="analyst")으로 승격 — 체크박스 토글 제거 (2026-07-14)
   const [freeInput, setFreeInput] = n2UseState("");
   const goldens = window.Dataset.questions();
-  const Q = isFree ? [...goldens, ...freeQs] : goldens;
+  const Q = isAnalyst ? freeQs : (isFree ? [...goldens, ...freeQs] : goldens);
 
   n2UseEffect(() => { (async () => {
     try {
@@ -313,38 +315,38 @@ function NLScreenV2() {
                   height: "calc(100vh - 48px)", overflow: "hidden" }}>
       {/* ---- 좌: 제어 + 스코어보드 + 질문 목록 ---- */}
       <div style={{ borderRight: "1px solid var(--border)", padding: "18px 16px", overflowY: "auto" }}>
-        <div style={{ ...monoV2, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>NL 에이전트 · 레이어 소비 검증</div>
+        <div style={{ ...monoV2, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
+          {isAnalyst ? "분석 에이전트 · v0 실험" : "NL 에이전트 · 레이어 소비 검증"}</div>
         <div style={{ fontSize: 14.5, color: "var(--muted)", marginBottom: 14 }}>
-          충분히 채워진 시맨틱 레이어가 주어졌을 때, 레이어를 소비하는 에이전트의 로직이 성립하는가
+          {isAnalyst
+            ? "목적 하나를 받아 계획을 선언하고, 여러 SQL로 확인한 뒤 근거가 붙은 리포트로 답하는가 (형제 계약: agent-analyst-v0)"
+            : "충분히 채워진 시맨틱 레이어가 주어졌을 때, 레이어를 소비하는 에이전트의 로직이 성립하는가"}
         </div>
-                {isFree && (
+                {(isFree || isAnalyst) && (
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 13.5, color: "var(--muted)", marginBottom: 6 }}>
-              Fineract 재료 표적 골든 + 자유 질의 병존. 질문 추가 시 F## ID 부여.
+              {isAnalyst ? "분석 목적 입력 시 A## ID 부여. 채점 없음 — 트레이스 관찰용." : "Fineract 재료 표적 골든 + 자유 질의 병존. 질문 추가 시 F## ID 부여."}
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <input value={freeInput} onChange={(e) => setFreeInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && freeInput.trim() && !busy) {
-                  const q = { id: "F" + String(freeQs.length + 1).padStart(2, "0"), cat: "free", text: freeInput.trim(),
-                               mode: analystMode ? "analyst" : "free", golden: null, expected_ops: [] };
+                  const q = { id: (isAnalyst ? "A" : "F") + String(freeQs.length + 1).padStart(2, "0"),
+                               cat: isAnalyst ? "analyst" : "free", text: freeInput.trim(),
+                               mode: isAnalyst ? "analyst" : "free", golden: null, expected_ops: [] };
                   setFreeQs((p) => [...p, q]); setFreeInput("");
                   // 리렌더 후 실행 - Q 배열에 q가 포함된 상태에서 setActive 되도록
                   requestAnimationFrame(() => requestAnimationFrame(() => runOne(q, true)));
                 }}}
-                placeholder={analystMode ? "분석 목적 입력 후 Enter (예: 지난 분기 대출 실적을 분석해줘)" : "질문 입력 후 Enter (예: 활성 고객이 몇 명이야?)"}
+                placeholder={isAnalyst ? "분석 목적 입력 후 Enter (예: 지난 분기 대출 실적을 분석해줘)" : "질문 입력 후 Enter (예: 활성 고객이 몇 명이야?)"}
                 style={{ flex: 1, padding: "8px 10px", background: "var(--panel)", border: "1px solid var(--border)",
                          borderRadius: 6, color: "var(--text)", fontSize: 14 }} />
-              <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13.5, color: analystMode ? "var(--accent)" : "var(--muted)", cursor: "pointer", whiteSpace: "nowrap" }}>
-                <input type="checkbox" checked={analystMode} onChange={(e) => setAnalystMode(e.target.checked)} />
-                분석 (실험)
-              </label>
             </div>
           </div>
         )}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-          <BtnV2 on={!busy && Q.length > 0} color="var(--accent)" onClick={runAll}>전체 실행 ({Q.length})</BtnV2>
+          {!isAnalyst && <BtnV2 on={!busy && Q.length > 0} color="var(--accent)" onClick={runAll}>전체 실행 ({Q.length})</BtnV2>}
           <BtnV2 on={busy} color="var(--low)" onClick={() => (abortRef.current = true)}>중단</BtnV2>
-          <BtnV2 on={!busy} color="var(--dim)" onClick={harnessSelfCheck}>하니스 자가검증</BtnV2>
+          {!isAnalyst && <BtnV2 on={!busy} color="var(--dim)" onClick={harnessSelfCheck}>하니스 자가검증</BtnV2>}
           <BtnV2 on={done.length > 0} color="var(--dim)" onClick={downloadResults}>결과 JSONL</BtnV2>
           <BtnV2 on={done.length > 0} color="var(--sig)" onClick={saveSnapshot}>스냅샷 저장</BtnV2>
                     <label style={{ ...monoV2, fontSize: 13, background: "var(--sig)22", color: "var(--sig)",
