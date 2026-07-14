@@ -46,11 +46,19 @@ window.LiveAPI = (function () {
     try { return JSON.parse(t); } catch (e) {}
     const s = t.indexOf("{");
     if (s >= 0) {
-      let depth = 0;
+      // 문자열 리터럴 내부의 중괄호를 무시하는 균형 파서 (__30_ F01: SQL·문장 속
+      // 중괄호를 세어 조기 종료하던 결함 수정)
+      let depth = 0, inStr = false, esc = false;
       for (let i = s; i < t.length; i++) {
-        if (t[i] === "{") depth++;
-        else if (t[i] === "}") { depth--; if (depth === 0) { try { return JSON.parse(t.slice(s, i + 1)); } catch (e) { break; } } }
+        const ch = t[i];
+        if (esc) { esc = false; continue; }
+        if (ch === "\\") { esc = true; continue; }
+        if (ch === '"') { inStr = !inStr; continue; }
+        if (inStr) continue;
+        if (ch === "{") depth++;
+        else if (ch === "}") { depth--; if (depth === 0) { try { return JSON.parse(t.slice(s, i + 1)); } catch (e) { break; } } }
       }
+      if (depth > 0) throw new Error("JSON 파싱 실패(응답 잘림 의심 — 여는 중괄호 " + depth + "개 미닫힘): " + t.slice(0, 120));
     }
     throw new Error("JSON 파싱 실패: " + t.slice(0, 120));
   }

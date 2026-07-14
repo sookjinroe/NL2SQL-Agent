@@ -79,12 +79,13 @@ A5. 정직한 리포트. 확인하지 못한 것, 낮은 확신의 재료에 기
 리포트: {"action":"report",
         "title":"리포트 제목",
         "basis":"이 리포트의 공통 기준 한 줄 (기간·상태 필터·지표 정의)",
-        "sections":[{"heading":"섹션 제목","finding":"수치가 든 발견 서술","sql":"근거 SQL"}],
+        "sections":[{"heading":"섹션 제목","finding":"수치가 든 발견 서술","sql_ref":[1,3]}],
         "summary":"핵심 발견 2~4문장 종합",
         "caveats":["한계·주의"],
         "confidence":"HIGH"|"MEDIUM"|"LOW","thinking":"한 문장"}
-        sections의 sql에는 실행한 try_sql의 SQL 문자열을 글자 그대로 복사하라 —
-        고쳐 쓰면 미실측으로 표시된다. finding의 수치는 그 실행 결과의 숫자여야 한다.
+        sql_ref는 그 섹션의 수치가 나온 실행 기록의 [Q번호] 목록이다 — SQL을 다시
+        쓰지 마라. 한 쿼리가 여러 섹션의 근거여도 되고, 한 섹션이 여러 쿼리를
+        참조해도 된다. finding의 수치는 참조한 실행 결과의 숫자여야 한다.
 단답:   {"action":"sql","sql":"SELECT ...","assumptions":[...],"confidence":"...","thinking":"한 문장"}
         (단일 사실 질문일 때만)
 확인:   {"action":"clarify","clarify_question":"...","options":[...],"thinking":"한 문장"}
@@ -108,11 +109,16 @@ A5. 정직한 리포트. 확인하지 못한 것, 낮은 확신의 재료에 기
     }
     if (log.length) {
       parts.push(``, `[연산 기록]`);
+      let qNo = 0;
       log.forEach((e, i) => {
         let body = JSON.stringify(e.result);
         const cap = e.op === "try_sql" ? 1400 : 900;
         if (body.length > cap) body = body.slice(0, cap) + "…(생략)";
-        parts.push(`${i + 1}. ${e.op}(${JSON.stringify(e.args)}) → ${body}`);
+        // 성공한 try_sql에 참조 번호 부여 — 리포트 섹션은 SQL 전문 대신 이 번호를 가리킴
+        // (__30_: SQL 전문 복사가 리포트를 비대하게 해 잘림 유발 + 묶음 쿼리를 축별로
+        //  재작성해 미실측 오탐 5/5. 번호 참조로 두 문제를 원리에서 제거)
+        const tag = (e.op === "try_sql" && e.result && e.result.ok === true) ? ` [Q${++qNo}]` : "";
+        parts.push(`${i + 1}.${tag} ${e.op}(${JSON.stringify(e.args)}) → ${body}`);
         if (e.note) parts.push(`   [안내] ${e.note}`);
       });
     }
@@ -176,12 +182,20 @@ A5. 정직한 리포트. 확인하지 못한 것, 낮은 확신의 재료에 기
         continue;
       }
 
-      // 리포트 실측 검증 (v0: 소프트 — 미실측 섹션은 표식만, 관찰 대상)
+      // 리포트 실측 검증: sql_ref(실행 기록 번호)의 유효성으로 판정.
+      // 문자열 대조(__30_에서 묶음 쿼리 재작성으로 오탐 5/5)를 번호 참조로 대체.
       if (resp.action === "report") {
-        const okSqls = new Set(log.filter((e) => e.op === "try_sql" && e.result && e.result.ok === true)
-                                  .map((e) => normSql((e.args || {}).sql || "")));
+        const okList = log.filter((e) => e.op === "try_sql" && e.result && e.result.ok === true)
+                          .map((e) => (e.args || {}).sql || "");
+        const okSqls = new Set(okList.map(normSql));
         const sections = resp.sections || [];
-        const unverified = sections.filter((s) => s.sql && !okSqls.has(normSql(s.sql)));
+        for (const sec of sections) {
+          const refs = Array.isArray(sec.sql_ref) ? sec.sql_ref : (sec.sql_ref != null ? [sec.sql_ref] : []);
+          const valid = refs.filter((n) => Number.isInteger(n) && n >= 1 && n <= okList.length);
+          if (valid.length) sec.sql = valid.map((n) => okList[n - 1]).join(";\n");
+          sec._ref_ok = valid.length > 0 && valid.length === refs.length;
+        }
+        const unverified = sections.filter((s) => !s._ref_ok && !(s.sql && okSqls.has(normSql(s.sql))));
         if (unverified.length) {
           resp._unverified_sections = unverified.map((s) => s.heading);
           await emit({ type: "note", text: `주의: 미실측 섹션 ${unverified.length}/${sections.length} — ${unverified.map((s) => s.heading).join(", ")}` });
