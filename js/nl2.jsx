@@ -153,6 +153,10 @@ function NLScreenV2({ variant }) {
         const initR = await wcall("init", { buf: buf.slice(0) });
         if (!initR.ok) throw new Error("워커 DB 초기화 실패: " + initR.error);
         window[wKey] = {
+          compute: async (code, childTables) => {
+            const r = await wcall("compute", { code, childTables });
+            return r.result || { ok: false, error: r.error, logs: "", notes: [] };
+          },
           exec: async (sql) => {
             const r = await wcall("exec", { sql });
             if (!r.ok) { const e = new Error(r.error); throw e; }
@@ -194,8 +198,10 @@ function NLScreenV2({ variant }) {
 
     // 실험: 분석 계약(agent-analyst-v0) — 자유 질의 전용, 기존 v2 계약 무접촉
     const runner = q.mode === "analyst" ? window.AgentAnalystV0.run : window.AgentCoreV2.runAgentV2;
+    const wForCompute = window["__DBW_" + window.Dataset.get()];
     const out = await runner({
       question: q.text,
+      computeCall: wForCompute ? (code, ct) => wForCompute.compute(code, ct) : null,
       complete: (s, u) => window.LiveAPI.complete(s, u, { onRetry: (a, d) => setNote(`재시도 ${a}회…`),
                                                           maxTokens: q.mode === "analyst" ? 6000 : undefined }),
       layerCall: window.LayerOpsV2.call,
