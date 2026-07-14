@@ -53,6 +53,26 @@
     return hints.length ? "단위 환산(시스템 계산 — 서술에 이 값을 그대로 써라): " + hints.join(" · ") : null;
   }
 
+  // 값 이상 신호 — 특정 문항 무관 일반형: 전부 0 / 비율성 컬럼의 100 초과·음수.
+  // 차단이 아니라 note (독립 경로 확인 유도 — __34_ A02 "전 상품 연체율 0%" 클래스).
+  function anomalyHints(rows) {
+    if (!rows || !rows.length) return null;
+    var hints = [];
+    var numeric = 0, zeros = 0;
+    for (var i = 0; i < Math.min(rows.length, 50); i++) {
+      for (var k in rows[i]) {
+        var v = rows[i][k];
+        if (typeof v !== "number") continue;
+        numeric++; if (v === 0) zeros++;
+        if (/pct|rate|ratio|율|비율/i.test(k) && (v > 100 || v < 0) && hints.length < 2)
+          hints.push("비율성 수치 이상(" + k + "=" + v + ") — 분자·분모(팬아웃·모집단)를 점검하라");
+      }
+    }
+    if (numeric >= 2 && zeros === numeric)
+      hints.unshift("수치가 전부 0 — 필터·조인·판정 조건 결함 가능성. 독립 경로로 확인 후 사용하라");
+    return hints.length ? hints.join(" / ") : null;
+  }
+
   // execSync: (sql) => sql.js exec 결과 [{columns, values}] (동기)
   function runCompute(execSync, code, opts) {
     opts = opts || {};
@@ -91,6 +111,8 @@
       }
       var uh = unitHints(rows);
       if (uh && notes.indexOf(uh) < 0) notes.push(uh);
+      var ah = anomalyHints(rows);
+      if (ah && notes.indexOf(ah) < 0) notes.push(ah);
       return rows;
     }
 
@@ -104,5 +126,5 @@
     }
   }
 
-  return { runCompute: runCompute, fanoutCheck: fanoutCheck, unitHints: unitHints };
+  return { runCompute: runCompute, fanoutCheck: fanoutCheck, unitHints: unitHints, anomalyHints: anomalyHints };
 });

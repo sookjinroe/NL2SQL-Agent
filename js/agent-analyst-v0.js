@@ -59,7 +59,9 @@ ${catalogMap}
 [규칙 — 각 규칙은 시스템이 검사하며, 어기면 반려·표시된다]
 R1. 리포트와 단답의 모든 수치는 try_sql·compute 실행 결과에서만 온다. 실행하지
     않은 SQL을 제출하면 시스템이 대신 실행해 돌려주고, 실행 기록에 없는
-    sql_ref는 미실측으로 표시된다.
+    sql_ref는 미실측으로 표시된다. 리포트는 핵심 수치 하나 이상을 처음과 다른
+    독립 경로로 재확인해 verification에 적어야 통과한다 (다른 집계 방향,
+    부분합=전체, 건수×평균≈합계 등 — 같은 쿼리 재실행은 재확인이 아니다).
 R2. 컬럼명·코드값·이름 리터럴은 지도와 조회 결과에서만 가져온다. 추측한
     컬럼명이 오류를 내면 시스템이 유사 후보를 알려준다 — 그것으로 정정하라.
 R3. 대상이 갈리거나 정보가 부족해도, 가정을 명시하고 진행할 수 있으면 진행한다.
@@ -80,6 +82,8 @@ R4. 계획은 실행 전에 한 번 선언한다. 축 구성이 바뀌면 다시
         "sections":[{"heading":"섹션 제목","finding":"수치가 든 발견 서술","sql_ref":[1,3]}],
         "summary":"핵심 발견 2~4문장 종합",
         "caveats":["한계·주의"],
+        "verification":{"claim":"재확인한 핵심 수치","method":"독립 경로 한 줄",
+                        "sql_ref":[..],"outcome":"일치"|"불일치 → 정정함"},
         "confidence":"HIGH"|"MEDIUM"|"LOW","thinking":"한 문장"}
         sql_ref는 그 섹션의 수치가 나온 실행 기록의 [Q번호] 목록이다 — SQL을 다시
         쓰지 마라. 한 쿼리가 여러 섹션의 근거여도 되고, 한 섹션이 여러 쿼리를
@@ -135,6 +139,7 @@ R4. 계획은 실행 전에 한 번 선언한다. 축 구성이 바뀌면 다시
     let plan = null;              // action:"plan"으로 선언된 분석 계획 (시스템이 유지)
     let planBounced = false;      // 미완주 리포트 반려는 1회만 (영구 루프 방지)
     let clarifyBounced = false;   // R3: 탐색 없는 즉답 clarify 반려는 1회만
+    let verifyBounced = false;    // R1: 검산 없는 리포트 반려는 1회만
     let lookupUsed = 0, sqlUsed = 0;
     const sys = sysPrompt(catalogMap);
     const normSql = (s) => String(s).replace(/\s+/g, " ").trim().replace(/;$/, "");
@@ -234,6 +239,25 @@ R4. 계획은 실행 전에 한 번 선언한다. 축 구성이 바뀌면 다시
             continue;
           }
         }
+        // R1 검산 요구: verification 미비 리포트는 1회 반려 (미완주 반려와 동형)
+        const v = resp.verification;
+        const vOk = v && v.claim && v.method && v.outcome;
+        if (!vOk && !verifyBounced && (MAX_TRYSQL - sqlUsed) >= 1) {
+          verifyBounced = true;
+          log.push({ op: "report(반려)", args: { reason: "verification 미비" },
+                     result: { error: "핵심 수치 하나를 처음과 다른 독립 경로로 재확인하고 verification{claim, method, sql_ref, outcome}을 채워 재제출하라. 같은 쿼리 재실행은 재확인이 아니다." } });
+          await emit({ type: "note", text: "프로토콜: 검산 없는 리포트 반려 (R1)" });
+          continue;
+        }
+        if (vOk) {
+          const vrefs = Array.isArray(v.sql_ref) ? v.sql_ref : (v.sql_ref != null ? [v.sql_ref] : []);
+          const vvalid = vrefs.filter((n) => Number.isInteger(n) && n >= 1 && n <= okList.length);
+          resp._verification_unverified = vrefs.length > 0 && vvalid.length !== vrefs.length;
+          if (vvalid.length) v.sql = vvalid.map((n) => okList[n - 1]).join(";\n");
+        } else if (!vOk) {
+          resp._verification_missing = true;
+          await emit({ type: "note", text: "주의: verification 없이 제출됨 (반려 소진)" });
+        }
         if (plan && !plan.comparison && !resp.basis) resp._no_comparison = true;
         if (plan) resp._plan = plan;
       }
@@ -311,7 +335,8 @@ R4. 계획은 실행 전에 한 번 선언한다. 축 구성이 바뀌면 다시
           if (fw) {
             const w = fw.fanoutCheck((resp.args || {}).sql || "", CHILD_GRAIN_TABLES);
             const uh = fw.unitHints(r.public.rows || []);
-            const both = [w, uh].filter(Boolean).join(" / ");
+            const ah = fw.anomalyHints ? fw.anomalyHints(r.public.rows || []) : null;
+            const both = [w, uh, ah].filter(Boolean).join(" / ");
             if (both) entry.note = (entry.note ? entry.note + " / " : "") + both;
           }
         }

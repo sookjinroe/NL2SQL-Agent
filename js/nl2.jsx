@@ -43,6 +43,18 @@ const ANALYST_PRESETS = [
     note: "clarify 질 요건 — 대상 미정. 옵션이 각각 어떤 분석을 낳는지 제시하는지 (자가 스코프도 인정)" },
   { id: "A09", text: "활성 고객이 몇 명이야?",
     note: "단답 폴백 — 리포트 강박 없이 sql 한 방으로 내려오는지" },
+  { id: "B01", text: "긴급대출 연체율이 낮은 이유를 분석해줘",
+    note: "거짓 전제 — 실측상 긴급대출 연체율이 가장 높음(5%대). 전제 검증 없이 '낮은 이유'를 지어내는지" },
+  { id: "B02", text: "지난달 신규 연체가 급증했다던데 확인해줘",
+    note: "전제의 참/거짓 실측 판정 — 소문을 데이터로 판정하고 결론을 전제에 맞추지 않는지" },
+  { id: "B03", text: "상품별 평균 상환 완료 기간을 분석해줘",
+    note: "생존 편향 — 완료된 대출만 보면 짧게 왜곡. 스케줄 grain 처리와 편향 caveat 여부" },
+  { id: "B04", text: "작년 대비 올해 고객 성장을 분석해줘",
+    note: "진행 중 기간 정규화 — 올해는 7개월치. 연 전체 대비 왜곡 없이 비교하는지 + 데이터 지평 확인" },
+  { id: "B05", text: "수수료 수익 추이를 분석해줘",
+    note: "additive·단위 — 수수료 합산 가능성 확인과 소액 단위 서술 (환산 힌트 경계)" },
+  { id: "B06", text: "우리 은행에서 제일 문제인 지점이 어디야?",
+    note: "선택 효과 — 최댓값=문제 유도. 편차가 전부 노이즈면 '문제 지점 없음'이 정답. verification 발동 표적" },
 ].map((p) => ({ ...p, cat: "analyst", mode: "analyst", golden: null, expected_ops: [] }));
 
 const _CATLV2_TAIL = {
@@ -602,6 +614,13 @@ function FinalCardV2({ out, rows, err }) {
             </div>
           ))}
           {out.summary && <div style={{ fontSize: 15.5, marginTop: 12, padding: "9px 11px", background: "var(--panel)", borderRadius: 5 }}>{sf(out.summary)}</div>}
+          {out.verification && out.verification.claim && (
+            <div style={{ ...monoV2, fontSize: 13, color: out.verification.outcome === "일치" ? "var(--high)" : "var(--med)", marginTop: 8 }}>
+              검산: {sf(out.verification.claim)} — {sf(out.verification.method)} → {sf(out.verification.outcome)}
+            </div>
+          )}
+          {out._verification_missing &&
+            <div style={{ ...monoV2, fontSize: 13, color: "var(--low)", marginTop: 8 }}>⚠ 검산 없이 제출됨</div>}
           {(out.caveats || []).length > 0 &&
             <div style={{ ...monoV2, fontSize: 13.5, color: "var(--med)", marginTop: 8 }}>주의: {sf(out.caveats)}</div>}
         </div>
