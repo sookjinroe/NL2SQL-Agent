@@ -19,8 +19,8 @@
     const today = _now.toISOString().slice(0, 10);
     const bounds = `이번 달 [${_d(_y, _m)} ~ ${_d(_y, _m + 1)}), 지난 달 [${_d(_y, _m - 1)} ~ ${_d(_y, _m)}), 이번 분기 [${_d(_y, _q * 3)} ~ ${_d(_y, _q * 3 + 3)}), 지난 분기 [${_d(_y, _q * 3 - 3)} ~ ${_d(_y, _q * 3)}), 올해 [${_d(_y, 0)} ~ ${_d(_y + 1, 0)})`;
     return `너는 시맨틱 레이어를 소비하는 데이터 분석 에이전트다. 분석 목적 하나를 받아
-스스로 분석 계획을 세우고, 여러 SQL을 실행해 확인한 뒤, 근거가 붙은 리포트로 답한다.
-단일 사실 질문이면 리포트 대신 SQL 하나로 답해도 된다.
+분석 계획을 선언하고, 여러 SQL을 실행해 확인한 뒤, 근거가 붙은 리포트로 답한다.
+단일 사실 질문이면 계획 없이 SQL 하나로 답해도 된다.
 
 오늘 날짜는 ${today}다. 상대 시간의 경계는 시스템이 계산해 두었다.
 아래 경계를 그대로 쓰고, 여기 없는 표현(예: 최근 90일)만 오늘 날짜로 직접 계산하라.
@@ -52,12 +52,15 @@ ${catalogMap}
   분해할 때도 세는 단위를 유지하라 — 대출 단위 비율이면 COUNT(DISTINCT 대출 id).
 
 [분석 원리]
-A1. 계획을 먼저 세운다. 첫 턴의 thinking에 분석 축(3~6개)을 적고 시작하라.
-    모든 실적·성과 분석에는 비교 기준이 있어야 한다 — 직전 기간, 전년 동기,
-    또는 전체 대비 구성비 중 목적에 맞는 것을 스스로 정하고 리포트에 명시한다.
-A2. 계획은 발견에 열려 있다. 실행 결과가 이상하거나 흥미로우면(급증·급감·
-    한 그룹의 역행·전부 0) 계획에 없던 추가 쿼리로 파고들어라. 단, 예산을 보며
-    — 남은 try_sql이 축 수보다 적으면 심화보다 계획 완주를 우선한다.
+A1. 계획을 선언한다. 필요한 탐색(용어·컬럼 확인)을 마치면, SQL 실행 전에
+    action:"plan"으로 분석 축(3~6개)과 비교 기준을 선언하라. 비교 기준은
+    직전 기간·전년 동기·전체 대비 구성비 중 목적에 맞는 것으로 — 실적·성과는
+    비교선 없이는 해석되지 않는다. 선언한 계획은 매 턴 [분석 계획]으로 표시된다.
+A2. 계획을 완주한다. 리포트는 계획의 모든 축이 실행되었을 때, 또는 실행하지
+    못한 축의 사유를 caveats에 축 이름과 함께 적었을 때만 제출한다.
+    "추가 조사 필요"는 예산이 남아 있는 동안엔 사유가 아니다 — 남은 예산으로
+    그 조사를 직접 하라. 실행 결과가 이상하거나 흥미로우면(급증·급감·한 그룹의
+    역행·전부 0) 계획에 없던 추가 쿼리로 파고들어도 된다.
 A3. 기준의 일관성. 같은 리포트 안의 모든 수치는 같은 기준을 쓴다 — 지표를 쓰면
     그 지표 블록의 정의식과 [기준]을 모든 섹션에서 동일하게, 사건 질문이면
     그 사건의 날짜·상태 컬럼을 동일하게. 섹션마다 기준이 다르면 숫자가 서로
@@ -70,7 +73,9 @@ A5. 정직한 리포트. 확인하지 못한 것, 낮은 확신의 재료에 기
     있는 것은 caveats에 적는다. 수치 없이 인상으로 쓰는 문장은 금지.
 
 [출력 — JSON 하나만. 마크다운 펜스·설명 텍스트 금지]
-연산:   {"action":"op","op":"<연산명>","args":{...},"thinking":"한 문장 (첫 턴은 분석 축 계획)"}
+연산:   {"action":"op","op":"<연산명>","args":{...},"thinking":"한 문장"}
+계획:   {"action":"plan","axes":["축 이름 3~6개"],"comparison":"비교 기준 한 줄","thinking":"한 문장"}
+        (SQL 실행 전에 한 번 — 이후 계획 수정이 필요하면 다시 선언해도 된다)
 리포트: {"action":"report",
         "title":"리포트 제목",
         "basis":"이 리포트의 공통 기준 한 줄 (기간·상태 필터·지표 정의)",
@@ -78,8 +83,8 @@ A5. 정직한 리포트. 확인하지 못한 것, 낮은 확신의 재료에 기
         "summary":"핵심 발견 2~4문장 종합",
         "caveats":["한계·주의"],
         "confidence":"HIGH"|"MEDIUM"|"LOW","thinking":"한 문장"}
-        sections의 모든 sql은 try_sql로 실행해 확인한 것이어야 하고, finding의
-        수치는 그 실행 결과의 숫자여야 한다.
+        sections의 sql에는 실행한 try_sql의 SQL 문자열을 글자 그대로 복사하라 —
+        고쳐 쓰면 미실측으로 표시된다. finding의 수치는 그 실행 결과의 숫자여야 한다.
 단답:   {"action":"sql","sql":"SELECT ...","assumptions":[...],"confidence":"...","thinking":"한 문장"}
         (단일 사실 질문일 때만)
 확인:   {"action":"clarify","clarify_question":"...","options":[...],"thinking":"한 문장"}
@@ -90,8 +95,17 @@ A5. 정직한 리포트. 확인하지 못한 것, 낮은 확신의 재료에 기
 남은 연산 횟수가 0이 되면 반드시 최종 액션 중 하나를 내라.`;
   }
 
-  function userPrompt(question, log, lookupLeft, sqlLeft) {
+  function userPrompt(question, log, lookupLeft, sqlLeft, plan) {
     const parts = [`[분석 목적] ${question}`];
+    // 계획을 시스템이 붙들고 매 턴 주입 — thinking은 다음 턴에 휘발되어
+    // 모델이 자기 계획을 볼 수 없었음 (__29_ F01: 5축 계획 후 1축만 실행하고 종료).
+    // 경계표·자동 실측과 같은 "상태는 시스템이 유지" 장치.
+    if (plan) {
+      const okSql = log.filter((e) => e.op === "try_sql" && e.result && e.result.ok === true).length;
+      parts.push(``, `[분석 계획 — 선언됨] 축: ${plan.axes.map((a, i) => `${i + 1}. ${a}`).join(" / ")}`,
+                 `비교 기준: ${plan.comparison || "(미선언)"} · 성공한 try_sql: ${okSql}회`,
+                 `리포트는 모든 축을 실행했거나 미실행 축의 사유를 caveats에 적은 뒤에만 제출하라.`);
+    }
     if (log.length) {
       parts.push(``, `[연산 기록]`);
       log.forEach((e, i) => {
@@ -111,6 +125,8 @@ A5. 정직한 리포트. 확인하지 못한 것, 낮은 확신의 재료에 기
     const log = [], opsTrace = [];
     const seen = new Set();
     let turns = 0;
+    let plan = null;              // action:"plan"으로 선언된 분석 계획 (시스템이 유지)
+    let planBounced = false;      // 미완주 리포트 반려는 1회만 (영구 루프 방지)
     let lookupUsed = 0, sqlUsed = 0;
     const sys = sysPrompt(catalogMap);
     const normSql = (s) => String(s).replace(/\s+/g, " ").trim().replace(/;$/, "");
@@ -120,7 +136,7 @@ A5. 정직한 리포트. 확인하지 못한 것, 낮은 확신의 재료에 기
       turns++;
       let resp;
       try {
-        resp = await complete(sys, userPrompt(question, log, MAX_LOOKUP - lookupUsed, MAX_TRYSQL - sqlUsed));
+        resp = await complete(sys, userPrompt(question, log, MAX_LOOKUP - lookupUsed, MAX_TRYSQL - sqlUsed, plan));
       } catch (e) {
         return { final: { action: "cannot_answer", reason: "모델 호출 실패: " + (e.message || e) },
                  log, opsTrace, turns, error: String(e.message || e) };
@@ -152,6 +168,14 @@ A5. 정직한 리포트. 확인하지 못한 것, 낮은 확신의 재료에 기
         if (!verified) await emit({ type: "note", text: "try_sql 예산 소진 상태로 미실측 SQL 제출 허용" });
       }
 
+      if (resp.action === "plan" && Array.isArray(resp.axes) && resp.axes.length) {
+        plan = { axes: resp.axes.map(String), comparison: resp.comparison ? String(resp.comparison) : null };
+        await emit({ type: "note", text: `계획 선언: ${plan.axes.length}축 · 비교 기준 ${plan.comparison ? "○" : "✗ 미선언"}` });
+        log.push({ op: "plan", args: { axes: plan.axes, comparison: plan.comparison },
+                   result: { ok: true, note: "계획이 저장되어 매 턴 표시된다." } });
+        continue;
+      }
+
       // 리포트 실측 검증 (v0: 소프트 — 미실측 섹션은 표식만, 관찰 대상)
       if (resp.action === "report") {
         const okSqls = new Set(log.filter((e) => e.op === "try_sql" && e.result && e.result.ok === true)
@@ -162,6 +186,22 @@ A5. 정직한 리포트. 확인하지 못한 것, 낮은 확신의 재료에 기
           resp._unverified_sections = unverified.map((s) => s.heading);
           await emit({ type: "note", text: `주의: 미실측 섹션 ${unverified.length}/${sections.length} — ${unverified.map((s) => s.heading).join(", ")}` });
         }
+        // 미완주 반려 (1회): 계획 축보다 섹션이 적고 예산이 남으면 완주 요구.
+        // 자동 실측 대행과 같은 프로토콜 레벨 바운스 — 산문 지시의 이행률(0~80%)에 기대지 않음.
+        if (plan && !planBounced && sections.length < plan.axes.length && (MAX_TRYSQL - sqlUsed) >= 2) {
+          planBounced = true;
+          const caveatText = JSON.stringify(resp.caveats || []);
+          const missing = plan.axes.filter((a) => !sections.some((sec) => (sec.heading || "").includes(a.slice(0, 4))) &&
+                                                  !caveatText.includes(a.slice(0, 4)));
+          if (missing.length) {
+            await emit({ type: "note", text: `프로토콜: 계획 미완주 리포트 반려 — 미실행 축 ${missing.length}개, 남은 try_sql ${MAX_TRYSQL - sqlUsed}회` });
+            log.push({ op: "report(반려)", args: { sections: sections.map((s) => s.heading) },
+                       result: { error: `계획 ${plan.axes.length}축 중 ${sections.length}섹션만 제출됨. 남은 예산으로 미실행 축(${missing.join(", ")})을 실행하거나, 실행하지 않는 사유를 caveats에 축 이름과 함께 적고 재제출하라.` } });
+            continue;
+          }
+        }
+        if (plan && !plan.comparison && !resp.basis) resp._no_comparison = true;
+        if (plan) resp._plan = plan;
       }
 
       if (resp.action === "op") {
