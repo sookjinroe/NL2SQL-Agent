@@ -499,6 +499,39 @@ function ThreadV2({ q, r }) {
   );
 }
 
+// 접힘 블록 — 코드·결과 전문을 기본 접고 요약 한 줄만. 가독성 요청(2026-07-14) 반영:
+// "텍스트+코드/sql+텍스트 반복" 구조를 텍스트 흐름 중심으로.
+function FoldV2({ label, children }) {
+  const [open, setOpen] = n2UseState(false);
+  return (
+    <div style={{ marginTop: 6 }}>
+      <span onClick={() => setOpen(!open)}
+            style={{ ...monoV2, fontSize: 12.5, color: "var(--dim)", cursor: "pointer", userSelect: "none" }}>
+        {open ? "▾" : "▸"} {label}
+      </span>
+      {open && children}
+    </div>
+  );
+}
+
+// 연산 결과의 한 줄 요약 (접힘 상태에서 항상 보이는 부분)
+function opSummaryV2(e) {
+  const r = e.result;
+  if (!r) return null;
+  if (r.error) return { text: "오류: " + String(r.error).slice(0, 140), tone: "var(--low)" };
+  if (e.op === "try_sql") {
+    const n = r.row_count != null ? r.row_count : (r.rows ? r.rows.length : "?");
+    return { text: (r.ok ? "ok" : "실패") + " · " + n + "행", tone: "var(--high)" };
+  }
+  if (e.op === "compute") {
+    const first = String(r.logs || "").split("\n").find((l) => l.trim()) || "(log 없음)";
+    return { text: (r.ok ? "ok · " : "실패 · ") + first.slice(0, 110), tone: r.ok ? "var(--high)" : "var(--low)" };
+  }
+  if (r.match) return { text: "match: " + r.match + (r.results ? " · " + r.results.length + "건" : ""), tone: "var(--muted)" };
+  const s = JSON.stringify(r);
+  return { text: s.slice(0, 110) + (s.length > 110 ? "…" : ""), tone: "var(--muted)" };
+}
+
 function EventV2({ e, q }) {
   if (e.k === "think")
     return <div style={{ borderLeft: "2px solid var(--med)", padding: "4px 12px", margin: "10px 0", fontSize: 15.5, color: "var(--muted)", fontStyle: "italic" }}>{sf(e.text)}</div>;
@@ -509,11 +542,29 @@ function EventV2({ e, q }) {
       <div style={{ border: "1px solid var(--border)", borderLeft: "2px solid var(--sig)", borderRadius: 5, padding: "9px 13px", margin: "10px 0", background: "rgba(0,0,0,0.22)" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
           <span style={{ ...monoV2, fontSize: 15, color: "var(--sig)", fontWeight: 600 }}>{e.op}</span>
-          <span style={{ ...monoV2, fontSize: 14, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{JSON.stringify(e.args)}</span>
+          <span style={{ ...monoV2, fontSize: 14, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {(e.args || {}).sql ? String(e.args.sql).replace(/\s+/g, " ").slice(0, 90)
+             : (e.args || {}).code ? "{" + String(e.args.code).split("\n").filter((l) => l.trim()).length + "줄 스크립트}"
+             : JSON.stringify(e.args)}</span>
           <span style={{ flex: 1 }} />
           <span style={{ ...monoV2, fontSize: 12.5, color: e.status === "done" ? "var(--high)" : "var(--med)" }}>{e.status === "done" ? "조회 완료" : "요청 중…"}</span>
         </div>
-        {e.result && <pre style={{ ...monoV2, fontSize: 13, color: "var(--text)", whiteSpace: "pre-wrap", margin: "8px 0 0", maxHeight: 150, overflowY: "auto", opacity: 0.85 }}>{JSON.stringify(e.result, null, 1).slice(0, 1200)}</pre>}
+        {e.result && (() => {
+          const sum = opSummaryV2(e);
+          const body = (e.args || {}).sql || (e.args || {}).code;
+          return (
+            <div>
+              {sum && <div style={{ ...monoV2, fontSize: 13, color: sum.tone, marginTop: 6 }}>{sum.text}</div>}
+              {e.result.note && <div style={{ ...monoV2, fontSize: 12.5, color: "var(--med)", marginTop: 4 }}>⚑ {sf(e.result.note)}</div>}
+              {body && <FoldV2 label={e.op === "compute" ? "코드 보기" : "SQL 보기"}>
+                <pre style={{ ...monoV2, fontSize: 12.5, whiteSpace: "pre-wrap", margin: "4px 0 0", color: "var(--text)", opacity: 0.9, maxHeight: 300, overflowY: "auto" }}>{body}</pre>
+              </FoldV2>}
+              <FoldV2 label="결과 전체">
+                <pre style={{ ...monoV2, fontSize: 12.5, whiteSpace: "pre-wrap", margin: "4px 0 0", maxHeight: 260, overflowY: "auto", opacity: 0.85 }}>{JSON.stringify(e.result, null, 1).slice(0, 4000)}</pre>
+              </FoldV2>
+            </div>
+          );
+        })()}
       </div>
     );
   if (e.k === "final") return <FinalCardV2 out={e.out} rows={e.execRows} err={e.execErr} />;
@@ -544,7 +595,9 @@ function FinalCardV2({ out, rows, err }) {
                   <span style={{ ...monoV2, fontSize: 12, color: "var(--low)", marginLeft: 7 }}>미실측</span>}
               </div>
               <div style={{ fontSize: 15, margin: "3px 0" }}>{sf(s.finding)}</div>
-              {s.sql && <pre style={{ ...monoV2, fontSize: 12.5, whiteSpace: "pre-wrap", margin: "4px 0 0", color: "var(--dim)" }}>{s.sql}</pre>}
+              {s.sql && <FoldV2 label={"근거 보기" + (s.sql_ref ? " (Q" + [].concat(s.sql_ref).join("·Q") + ")" : "")}>
+                <pre style={{ ...monoV2, fontSize: 12.5, whiteSpace: "pre-wrap", margin: "4px 0 0", color: "var(--dim)", maxHeight: 280, overflowY: "auto" }}>{s.sql}</pre>
+              </FoldV2>}
             </div>
           ))}
           {out.summary && <div style={{ fontSize: 15.5, marginTop: 12, padding: "9px 11px", background: "var(--panel)", borderRadius: 5 }}>{sf(out.summary)}</div>}
