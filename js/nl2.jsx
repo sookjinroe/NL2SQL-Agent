@@ -599,7 +599,19 @@ function FinalCardV2({ out, rows, err }) {
       {out.action === "report" && (
         <div>
           <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 4 }}>{sf(out.title)}</div>
-          {out.basis && <div style={{ ...monoV2, fontSize: 13.5, color: "var(--med)", marginBottom: 10 }}>기준: {sf(out.basis)}</div>}
+          {out.basis && <div style={{ ...monoV2, fontSize: 13.5, color: "var(--med)", marginBottom: 4 }}>기준: {sf(out.basis)}</div>}
+          {out._plan && out._plan.axes && out._plan.axes[0] && out._plan.axes[0].name && (
+            <div style={{ ...monoV2, fontSize: 12.5, color: "var(--dim)", marginBottom: 10 }}>
+              {"계획 " + out._plan.axes.length + "축 — " + ["done","dropped","blocked","open"].map(function (st) {
+                var xs = out._plan.axes.filter(function (a) { return a.status === st; });
+                if (!xs.length) return null;
+                if (st === "done") return "done " + xs.length;
+                return st + " " + xs.length + ": " + xs.map(function (a) {
+                  return a.name.slice(0, 14) + (a.why ? "(" + a.why.slice(0, 22) + ")" : "");
+                }).join(", ");
+              }).filter(Boolean).join(" · ")}
+            </div>
+          )}
           {(out.sections || []).map((s, i) => (
             <div key={i} style={{ margin: "10px 0", paddingLeft: 10, borderLeft: "2px solid var(--border)" }}>
               <div style={{ fontSize: 14.5, fontWeight: 600, color: "var(--text)" }}>
