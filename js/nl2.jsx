@@ -395,9 +395,8 @@ function NLScreenV2({ variant }) {
           {!isAnalyst && <BtnV2 on={!busy} color="var(--dim)" onClick={harnessSelfCheck}>하니스 자가검증</BtnV2>}
           <BtnV2 on={done.length > 0} color="var(--dim)" onClick={downloadResults}>결과 JSONL</BtnV2>
           <BtnV2 on={done.length > 0} color="var(--sig)" onClick={saveSnapshot}>스냅샷 저장</BtnV2>
-          {!isAnalyst && (
-            <BtnV2 on={!busy} color="var(--sig)" onClick={async () => {
-              // 최신 골든 스냅샷(리포지토리 번들)을 즉시 로드 - 파일 선택 없이 결과 재생.
+          <BtnV2 on={!busy} color="var(--sig)" onClick={async () => {
+              // 최신 스냅샷(리포지토리 번들)을 즉시 로드 - 파일 선택 없이 결과 재생.
               // 임의 파일은 옆의 "파일에서…"로.
               try {
                 const r = await fetch("data/nl-snapshot-latest.json?v=" + Date.now());
@@ -408,7 +407,6 @@ function NLScreenV2({ variant }) {
                 setTimeout(() => setNote(null), 4000);
               }
             }}>최신 스냅샷 로드</BtnV2>
-          )}
                     <label style={{ ...monoV2, fontSize: 13, background: "var(--sig)22", color: "var(--sig)",
                           border: "1px solid var(--sig)", borderRadius: 4, padding: "6px 12px", cursor: "pointer" }}>
             📁 파일에서…
