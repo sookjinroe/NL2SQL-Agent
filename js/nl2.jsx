@@ -396,10 +396,11 @@ function NLScreenV2({ variant }) {
           <BtnV2 on={done.length > 0} color="var(--dim)" onClick={downloadResults}>결과 JSONL</BtnV2>
           <BtnV2 on={done.length > 0} color="var(--sig)" onClick={saveSnapshot}>스냅샷 저장</BtnV2>
           <BtnV2 on={!busy} color="var(--sig)" onClick={async () => {
-              // 최신 스냅샷(리포지토리 번들)을 즉시 로드 - 파일 선택 없이 결과 재생.
-              // 임의 파일은 옆의 "파일에서…"로.
+              // 탭별로 최신 회차 로드: NL=골든(nl-latest, __28_ 등), 분석=자유/분석(latest, __35_ 등).
+              // 파일 이름이 분리되어 있어 한쪽 갱신이 다른 쪽을 덮지 않음.
+              const path = isAnalyst ? "data/nl-snapshot-latest.json" : "data/nl-snapshot-nl-latest.json";
               try {
-                const r = await fetch("data/nl-snapshot-latest.json?v=" + Date.now());
+                const r = await fetch(path + "?v=" + Date.now());
                 if (!r.ok) throw new Error("HTTP " + r.status);
                 applySnapshot(await r.json());
               } catch (err) {
