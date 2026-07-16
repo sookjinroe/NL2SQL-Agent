@@ -147,8 +147,10 @@ function NLMarkerChipV2({ m }) {
 }
 
 function NLScreenV2({ variant }) {
-  // variant: undefined = 골든+자유 질의 / "analyst" = 분석 에이전트 전용 탭
-  const isAnalyst = variant === "analyst";
+  // variant: undefined = 골든+자유 질의 / "analyst" = 분석 에이전트 전용 탭 /
+  //          "nosem" = NL 대조군(레이어 없음) / "analyst-nosem" = 분석 대조군
+  const isAnalyst = variant === "analyst" || variant === "analyst-nosem";
+  const isNosem = variant === "nosem" || variant === "analyst-nosem";
   const [ready, setReady] = n2UseState(null);     // null=로딩, 'ok', 'err:...'
   const [results, setResults] = n2UseState({});   // qid → {status, events, final, verdict, execRows}
   const [active, setActive] = n2UseState(null);
@@ -204,6 +206,8 @@ function NLScreenV2({ variant }) {
         };
       }
       window.LayerOpsV2.init(window.Dataset.layer(), (sql) => window[wKey].exec(sql));
+      // 대조군(no-sem) 연산 계층도 같이 초기화 — 원본과 상태 분리(delegate 방식이라 실제 상태는 원본이 소유)
+      if (window.LayerOpsV2Nosem) window.LayerOpsV2Nosem.init(window.Dataset.layer(), (sql) => window[wKey].exec(sql));
       if (window.Scorer.setCodeDict) window.Scorer.setCodeDict(window.Dataset.layer().codedict);
       setReady("ok");
     } catch (e) { setReady("err: " + (e.message || e)); }
@@ -236,7 +240,11 @@ function NLScreenV2({ variant }) {
     };
 
     // 실험: 분석 계약(agent-analyst-v0) — 자유 질의 전용, 기존 v2 계약 무접촉
-    const runner = q.mode === "analyst" ? window.AgentAnalystV0.run : window.AgentCoreV2.runAgentV2;
+    // 대조군(isNosem): 시맨틱 레이어 제거판 — runner·ops를 no-sem 세트로 갈아끼운다
+    const runner = isNosem
+      ? (q.mode === "analyst" ? window.AgentAnalystV0Nosem.run : window.AgentCoreV2Nosem.runAgentV2)
+      : (q.mode === "analyst" ? window.AgentAnalystV0.run       : window.AgentCoreV2.runAgentV2);
+    const ops = isNosem ? window.LayerOpsV2Nosem : window.LayerOpsV2;
     const wForCompute = window["__DBW_" + window.Dataset.get()];
     const out = await runner({
       question: q.text,
@@ -244,8 +252,8 @@ function NLScreenV2({ variant }) {
       complete: (s, u) => window.LiveAPI.complete(s, u, { onRetry: (a, d) => setNote(`재시도 ${a}회…`),
                                                           maxTokens: q.mode === "analyst" ? 6000 : undefined,
                                                           repairJson: q.mode === "analyst" || undefined }),
-      layerCall: window.LayerOpsV2.call,
-      catalogMap: window.LayerOpsV2.buildMap(),
+      layerCall: ops.call,
+      catalogMap: ops.buildMap(),
       onEvent,
     });
     setNote(null);
@@ -312,7 +320,7 @@ function NLScreenV2({ variant }) {
     const snap = {
       version: 1,
       model: window.LiveAPI.getModel(),
-      prompt_id: "agent_v2",
+      prompt_id: isNosem ? (isAnalyst ? "analyst_v0_nosem" : "agent_v2_nosem") : (isAnalyst ? "analyst_v0" : "agent_v2"),
       created: new Date().toISOString(),
       results: Object.fromEntries(
         Q.filter((q) => results[q.id] && results[q.id].events)
