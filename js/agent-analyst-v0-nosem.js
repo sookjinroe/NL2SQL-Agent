@@ -14,7 +14,7 @@
 
   function sysPrompt(catalogMap) {
     const _d = (y, m) => new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
-    const _now = new Date(); const _y = _now.getUTCFullYear(); const _m = _now.getUTCMonth(); const _q = Math.floor(_m / 3);
+    const _now = new Date('2026-07-14T00:00:00Z'); /* 데이터 기준일 고정 (세계 스냅샷 2026-07-14) */ const _y = _now.getUTCFullYear(); const _m = _now.getUTCMonth(); const _q = Math.floor(_m / 3);
     const today = _now.toISOString().slice(0, 10);
     const bounds = `이번 달 [${_d(_y, _m)} ~ ${_d(_y, _m + 1)}), 지난 달 [${_d(_y, _m - 1)} ~ ${_d(_y, _m)}), 이번 분기 [${_d(_y, _q * 3)} ~ ${_d(_y, _q * 3 + 3)}), 지난 분기 [${_d(_y, _q * 3 - 3)} ~ ${_d(_y, _q * 3)}), 올해 [${_d(_y, 0)} ~ ${_d(_y + 1, 0)})
 진행 중 기간의 공정 비교: 이번 달 진행분 [${_d(_y, _m)} ~ ${today}) ↔ 전월 동일 일수 [${_d(_y, _m - 1)} ~ ${new Date(Date.UTC(_y, _m - 1, _now.getUTCDate())).toISOString().slice(0, 10)})`;
